@@ -171,7 +171,6 @@ In the Proxmox UI: **Create CT**
 | **Network → IPv4** | DHCP or static | Static/reservation recommended |
 | **Network → Firewall** | optional | Allow TCP **8787** from LAN if enabled |
 | **DNS** | host / your LAN DNS | |
-| **Start after created** | Yes | |
 
 **Network note:** the CT must reach the iDRAC management IPs (UDP **623**).  
 If iDRAC is on a management VLAN, attach the CT to that bridge/VLAN or add a route.
