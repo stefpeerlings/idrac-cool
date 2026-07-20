@@ -1,0 +1,35 @@
+# Kopieer naar config.yaml en vul iDRAC IPs in.
+# Wachtwoord: export IDRAC_PASSWORD='***'  (niet in dit bestand)
+
+poll_interval_seconds: 5
+fan_presets: [15, 20, 25, 30, 40, 50]
+fan_min_percent: 10
+fan_max_percent: 50
+reapply_interval_seconds: 60
+reapply_on_host_online: true
+default_mode: smart_auto   # smart_auto | manual | dell_auto
+default_percent: 20
+ipmi_timeout_seconds: 8
+bind_host: "0.0.0.0"
+bind_port: 8787
+
+smart_auto:
+  metric: cpu_max          # cpu_max | outlet | inlet
+  hysteresis_c: 3
+  bands:
+    - { below_c: 45, percent: 15 }
+    - { below_c: 55, percent: 20 }
+    - { below_c: 65, percent: 25 }
+    - { below_c: 999, percent: 30 }
+
+credentials:
+  username: root
+  # password via env IDRAC_PASSWORD
+
+hosts:
+  - id: minilab2
+    name: "minilab2 (R630)"
+    host: 10.0.10.x
+  - id: minilab
+    name: "minilab (R630)"
+    host: 10.0.10.y

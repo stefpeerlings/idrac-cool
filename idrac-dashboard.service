@@ -1,0 +1,19 @@
+[Unit]
+Description=iDRAC Cool Fan Dashboard
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=YOUR_USER
+WorkingDirectory=/opt/idrac-cool
+Environment=IDRAC_PASSWORD=change-me
+# Environment=IDRAC_USERNAME=root
+# Environment=DASHBOARD_PASSWORD=change-me
+Environment=PATH=/opt/idrac-cool/.venv/bin:/usr/bin
+ExecStart=/opt/idrac-cool/.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8787
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

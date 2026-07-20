@@ -1,0 +1,2619 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>iDRAC Cool · Fan Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #07090e;
+      --surface: rgba(18, 24, 36, 0.55);
+      --surface2: rgba(28, 36, 52, 0.55);
+      --border: rgba(255, 255, 255, 0.10);
+      --border-h: rgba(255, 255, 255, 0.18);
+      --text: #edf1f7;
+      --muted: #7d8da3;
+      --accent: #5b9cf5;
+      --accent-dim: rgba(91, 156, 245, 0.15);
+      --green: #34d399;
+      --green-dim: rgba(52, 211, 153, 0.15);
+      --orange: #fbbf24;
+      --orange-dim: rgba(251, 191, 36, 0.12);
+      --red: #f87171;
+      --red-dim: rgba(248, 113, 113, 0.12);
+      --radius: 18px;
+      --mono: "IBM Plex Mono", ui-monospace, monospace;
+      --sans: "Plus Jakarta Sans", system-ui, sans-serif;
+      --float-shadow:
+        0 4px 6px rgba(0, 0, 0, 0.12),
+        0 12px 28px rgba(0, 0, 0, 0.35),
+        0 28px 56px rgba(0, 0, 0, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      --float-shadow-hover:
+        0 8px 12px rgba(0, 0, 0, 0.15),
+        0 20px 40px rgba(0, 0, 0, 0.4),
+        0 40px 72px rgba(0, 0, 0, 0.32),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.45;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 90% 55% at 15% -5%, rgba(91, 156, 245, 0.16), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 95% 90%, rgba(52, 211, 153, 0.09), transparent 50%),
+        radial-gradient(ellipse 50% 40% at 50% 50%, rgba(120, 80, 200, 0.04), transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    /* soft depth layer under floating panels */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 1px 1px, rgba(255,255,255,0.03) 1px, transparent 0);
+      background-size: 28px 28px;
+      opacity: 0.45;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 22px 18px 56px;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      backdrop-filter: blur(20px) saturate(1.35);
+      -webkit-backdrop-filter: blur(20px) saturate(1.35);
+      box-shadow: var(--float-shadow);
+    }
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    header h1 span { color: var(--accent); }
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+    }
+    .pill .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+    .pill.mock .dot { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+    .btn {
+      font-family: var(--sans);
+      font-weight: 600;
+      font-size: 0.875rem;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: border-color .15s, background .15s, transform .1s;
+    }
+    .btn:hover { border-color: var(--border-h); background: rgba(30, 38, 54, 0.9); }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--accent-dim);
+      border-color: rgba(91, 156, 245, 0.35);
+      color: #b6d4ff;
+    }
+    .btn-primary:hover { background: rgba(91, 156, 245, 0.25); }
+    .btn-danger {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.12);
+      color: var(--muted);
+    }
+    .btn-danger:hover {
+      border-color: rgba(248, 113, 113, 0.35);
+      color: #fca5a5;
+      background: rgba(248, 113, 113, 0.08);
+    }
+    .grid {
+      /* 3 compacte rechthoeken naast elkaar, daarna wrap naar onder */
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+      align-items: stretch;
+    }
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 720px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      position: relative;
+      background: linear-gradient(
+        160deg,
+        rgba(30, 38, 54, 0.78) 0%,
+        rgba(14, 18, 28, 0.62) 48%,
+        rgba(16, 22, 34, 0.7) 100%
+      );
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 0;
+      overflow: hidden;
+      backdrop-filter: blur(22px) saturate(1.4);
+      -webkit-backdrop-filter: blur(22px) saturate(1.4);
+      box-shadow: var(--float-shadow);
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      transform: translateY(0);
+      transition:
+        transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+        border-color 0.2s ease,
+        opacity 0.2s ease;
+    }
+    .card.card-enter {
+      animation: float-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.08) 0%,
+        transparent 22%
+      );
+      opacity: 0.9;
+      z-index: 0;
+    }
+    .card > * { position: relative; z-index: 1; }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--float-shadow-hover);
+      border-color: var(--border-h);
+    }
+    @keyframes float-in {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .card-add {
+      display: flex;
+      flex-direction: column;
+      border-style: dashed;
+      border-color: rgba(91, 156, 245, 0.4);
+      min-height: 220px;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+      padding: 28px 16px;
+      gap: 8px;
+      background: linear-gradient(
+        155deg,
+        rgba(91, 156, 245, 0.08) 0%,
+        rgba(14, 18, 28, 0.45) 100%
+      );
+    }
+    .card-add:hover {
+      border-color: var(--accent);
+      background: rgba(91, 156, 245, 0.14);
+      color: var(--accent);
+      transform: translateY(-3px);
+    }
+    .card-add .plus {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      font-size: 1.6rem;
+      font-weight: 300;
+      line-height: 1;
+      margin-bottom: 6px;
+      border: 1px dashed rgba(91, 156, 245, 0.45);
+      background: rgba(91, 156, 245, 0.08);
+    }
+    .card-add .add-title { font-weight: 600; font-size: 0.95rem; }
+    .card-add .add-sub { font-size: 0.76rem; opacity: 0.85; text-align: center; }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 12px 12px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .card-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-sub {
+      color: var(--muted);
+      font-size: 0.7rem;
+      font-family: var(--mono);
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .status-col {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .badge {
+      font-size: 0.62rem;
+      font-weight: 600;
+      padding: 3px 7px;
+      border-radius: 999px;
+      font-family: var(--mono);
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .badge.online { background: var(--green-dim); color: var(--green); box-shadow: 0 0 0 1px rgba(52,211,153,0.2); }
+    .badge.offline { background: var(--red-dim); color: var(--red); box-shadow: 0 0 0 1px rgba(248,113,113,0.2); }
+    .badge.mode-smart { background: var(--green-dim); color: var(--green); }
+    .badge.mode-manual { background: var(--accent-dim); color: var(--accent); }
+    .badge.mode-dell { background: var(--orange-dim); color: var(--orange); }
+
+    .card-body {
+      padding: 10px 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+    .metrics {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .temps {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .temp {
+      background: rgba(8, 12, 20, 0.5);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 8px 9px 7px;
+      text-align: left;
+      min-width: 0;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+    .temp .label {
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .temp .val-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 4px;
+    }
+    .temp .val {
+      font-family: var(--mono);
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .temp .unit {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .temp .bar {
+      margin-top: 6px;
+      height: 2px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+    .temp .bar > i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      width: 0%;
+      transition: width 0.4s ease, background 0.3s ease;
+    }
+    .temp .val.ok { color: var(--green); }
+    .temp .val.warn { color: var(--orange); }
+    .temp .val.hot { color: var(--red); }
+    .temp .val.na { color: var(--muted); font-size: 1.2rem; }
+    .temp .bar > i.ok { background: var(--green); }
+    .temp .bar > i.warn { background: var(--orange); }
+    .temp .bar > i.hot { background: var(--red); }
+    .temp .bar > i.na { background: transparent; }
+
+    .fans-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+    .fans-row .fans-label {
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-right: 2px;
+    }
+    .fan-chip {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      font-weight: 500;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(8, 12, 20, 0.45);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: #a8b8cc;
+    }
+    .fan-chip.empty { color: var(--muted); }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(8, 12, 20, 0.35);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .section-label {
+      font-size: 0.58rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+    .mode-toggle {
+      display: flex;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      overflow: hidden;
+      padding: 2px;
+      gap: 2px;
+    }
+    .mode-toggle button {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-weight: 600;
+      font-size: 0.76rem;
+      padding: 7px 6px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background .15s, color .15s, box-shadow .15s;
+    }
+    .mode-toggle button.active-auto {
+      background: var(--green-dim);
+      color: var(--green);
+      box-shadow: 0 0 0 1px rgba(52,211,153,0.25);
+    }
+    .mode-toggle button.active-manual {
+      background: var(--accent-dim);
+      color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(91,156,245,0.3);
+    }
+    .dell-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 7px 9px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(0,0,0,0.18);
+      cursor: pointer;
+      user-select: none;
+      transition: border-color .15s, background .15s;
+    }
+    .dell-check.hidden { display: none; }
+    .dell-check input {
+      margin-top: 1px;
+      width: 13px;
+      height: 13px;
+      accent-color: var(--orange);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .dell-check .txt strong { display: block; font-size: 0.78rem; font-weight: 600; }
+    .dell-check .txt small { color: var(--muted); font-size: 0.65rem; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .dell-check.on {
+      border-color: rgba(251, 191, 36, 0.4);
+      background: var(--orange-dim);
+    }
+    .fan-btns {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+    }
+    .fan-btns button {
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 0.78rem;
+      padding: 8px 2px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(0,0,0,0.22);
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color .15s, background .15s, transform .1s;
+    }
+    .fan-btns button:hover:not(:disabled) {
+      border-color: rgba(91, 156, 245, 0.45);
+      background: var(--accent-dim);
+    }
+    .fan-btns button.active {
+      background: rgba(91, 156, 245, 0.22);
+      border-color: rgba(91, 156, 245, 0.55);
+      color: #c5dcff;
+      box-shadow: 0 0 0 1px rgba(91,156,245,0.2);
+    }
+    .fan-btns button:disabled {
+      opacity: 0.32;
+      cursor: not-allowed;
+    }
+    .fan-custom {
+      display: flex;
+      gap: 6px;
+      margin-top: 6px;
+      align-items: stretch;
+    }
+    .fan-custom .custom-input-wrap {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: stretch;
+      border-radius: 9px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.28);
+      overflow: hidden;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .fan-custom .custom-input-wrap:focus-within {
+      border-color: rgba(91, 156, 245, 0.45);
+      box-shadow: 0 0 0 1px rgba(91, 156, 245, 0.15);
+    }
+    .fan-custom .custom-input-wrap.disabled {
+      opacity: 0.35;
+      pointer-events: none;
+    }
+    .fan-custom input {
+      flex: 1;
+      min-width: 0;
+      width: 100%;
+      padding: 7px 6px 7px 10px;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      font-weight: 600;
+      -moz-appearance: textfield;
+      appearance: textfield;
+    }
+    .fan-custom input:focus {
+      outline: none;
+    }
+    /* hide native spinners */
+    .fan-custom input::-webkit-outer-spin-button,
+    .fan-custom input::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    .fan-custom .stepper {
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      width: 26px;
+      border-left: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+    }
+    .fan-custom .stepper button {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0;
+      min-height: 14px;
+      transition: background .12s, color .12s;
+    }
+    .fan-custom .stepper button:hover:not(:disabled) {
+      background: rgba(91, 156, 245, 0.18);
+      color: #c5dcff;
+    }
+    .fan-custom .stepper button:active:not(:disabled) {
+      background: rgba(91, 156, 245, 0.28);
+    }
+    .fan-custom .stepper button:first-child {
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .fan-custom .stepper button svg {
+      width: 10px;
+      height: 10px;
+      display: block;
+    }
+    .fan-custom .btn-set {
+      flex-shrink: 0;
+      font-family: var(--sans);
+      font-weight: 600;
+      font-size: 0.72rem;
+      padding: 0 12px;
+      border-radius: 9px;
+      border: 1px solid rgba(91, 156, 245, 0.35);
+      background: var(--accent-dim);
+      color: #b6d4ff;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .fan-custom .btn-set:hover:not(:disabled) {
+      background: rgba(91, 156, 245, 0.28);
+      border-color: rgba(91, 156, 245, 0.5);
+    }
+    .fan-custom .btn-set:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .fan-custom .unit-label {
+      display: none;
+    }
+
+    .hint {
+      font-size: 0.68rem;
+      color: var(--muted);
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      line-height: 1.35;
+    }
+    .hint:empty,
+    .hint.err:empty {
+      display: none !important;
+    }
+    .hint.warn {
+      color: #fcd34d;
+      background: transparent;
+      border: none;
+      padding: 4px 0;
+    }
+    .hint.err {
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      padding: 4px 0;
+    }
+    .hidden {
+      display: none !important;
+    }
+    /* geen browser rode randen bij invalid/required */
+    input:invalid,
+    input:user-invalid {
+      box-shadow: none !important;
+      outline: none !important;
+      border-color: inherit;
+    }
+    input:focus:invalid {
+      border-color: rgba(91, 156, 245, 0.45);
+    }
+
+    .card-foot {
+      margin-top: auto;
+      padding: 8px 12px 10px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: rgba(0,0,0,0.12);
+      min-height: 44px;
+    }
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: nowrap;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .card-actions .btn { font-size: 0.7rem; padding: 5px 9px; border-radius: 8px; }
+    .detect-box {
+      font-size: 0.65rem;
+      color: var(--muted);
+      font-family: var(--mono);
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+      flex: 1;
+      padding: 0;
+      border: none;
+      background: transparent;
+      max-height: none;
+    }
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.hidden { display: none; }
+    .modal {
+      width: min(440px, 100%);
+      background: linear-gradient(160deg, rgba(28, 36, 52, 0.92), rgba(12, 16, 24, 0.94));
+      border: 1px solid var(--border-h);
+      border-radius: 20px;
+      padding: 22px;
+      box-shadow: var(--float-shadow-hover);
+      backdrop-filter: blur(24px) saturate(1.3);
+      -webkit-backdrop-filter: blur(24px) saturate(1.3);
+      animation: float-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .modal h2 {
+      font-size: 1.15rem;
+      margin-bottom: 6px;
+    }
+    .modal p.sub {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 18px;
+    }
+    .field {
+      margin-bottom: 14px;
+    }
+    .field label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .field input {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.9rem;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .field .help {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      color: var(--muted);
+      padding: 20px;
+      font-size: 0.9rem;
+    }
+    .busy { opacity: 0.6; pointer-events: none; }
+
+    /* Compact settings dropdown */
+    .header-actions {
+      position: relative;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .settings-menu {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      min-width: 200px;
+      padding: 6px;
+      border-radius: 12px;
+      background: linear-gradient(160deg, rgba(28, 36, 52, 0.96), rgba(12, 16, 24, 0.98));
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+      backdrop-filter: blur(16px);
+      z-index: 40;
+      display: none;
+    }
+    .settings-menu.open { display: block; }
+    .settings-menu button,
+    .settings-menu .settings-lang {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      gap: 10px;
+      border: none;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-align: left;
+      padding: 9px 11px;
+      border-radius: 9px;
+      cursor: pointer;
+      transition: background .12s;
+    }
+    .settings-menu button:hover {
+      background: rgba(91, 156, 245, 0.12);
+    }
+    .settings-menu button.danger:hover {
+      background: rgba(248, 113, 113, 0.1);
+      color: #fca5a5;
+    }
+    .settings-menu .settings-sep {
+      height: 1px;
+      margin: 4px 6px;
+      background: rgba(255,255,255,0.07);
+    }
+    .settings-menu .settings-lang {
+      cursor: default;
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+    .settings-menu .settings-lang select {
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text);
+      border-radius: 7px;
+      padding: 4px 8px;
+      font-family: var(--sans);
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .settings-menu .settings-lang select:focus {
+      outline: none;
+      border-color: rgba(91, 156, 245, 0.45);
+    }
+    #account-modal .settings-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 4px;
+      background: rgba(0,0,0,0.28);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    #account-modal .settings-tab {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-weight: 600;
+      font-size: 0.8rem;
+      padding: 8px 10px;
+      border-radius: 9px;
+      cursor: pointer;
+    }
+    #account-modal .settings-tab.active {
+      background: var(--accent-dim);
+      color: #c5dcff;
+      box-shadow: 0 0 0 1px rgba(91,156,245,0.25);
+    }
+    .acc-pane { display: none; }
+    .acc-pane.active { display: block; }
+    .user-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 9px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.85rem;
+    }
+    .user-row .you {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-left: 6px;
+    }
+
+    /* ── Login — polished full-page experience ── */
+    #login-gate.auth-modal--gate {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      padding: 0;
+      background: #070b12;
+      backdrop-filter: none;
+    }
+    #login-gate.auth-modal--gate.hidden { display: none !important; }
+
+    .auth-gate__bg {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse 90% 70% at 18% 45%, rgba(59, 130, 246, 0.2) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 50% at 55% 75%, rgba(16, 185, 129, 0.09) 0%, transparent 50%),
+        radial-gradient(ellipse 45% 40% at 78% 28%, rgba(99, 102, 241, 0.1) 0%, transparent 48%),
+        linear-gradient(160deg, #05080e 0%, #0a1220 40%, #0d1728 70%, #080e16 100%);
+    }
+    .auth-gate__grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(148, 163, 184, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.045) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse 85% 80% at 35% 50%, #000 0%, transparent 75%);
+      opacity: 0.7;
+    }
+    .auth-gate__glow {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(110px);
+      pointer-events: none;
+    }
+    .auth-gate__glow--cool {
+      width: min(640px, 55vw);
+      height: min(480px, 55vh);
+      top: 18%;
+      left: 12%;
+      background: rgba(59, 130, 246, 0.32);
+    }
+    .auth-gate__glow--soft {
+      width: min(420px, 40vw);
+      height: min(360px, 40vh);
+      bottom: 8%;
+      left: 32%;
+      background: rgba(16, 185, 129, 0.14);
+    }
+
+    .auth-gate__layout {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: 1fr minmax(300px, 360px);
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    .auth-gate__showcase {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 4vw 3rem 5vw;
+    }
+    .auth-gate__brand-inner {
+      width: min(420px, 100%);
+      margin: 0 auto 0 10%;
+    }
+    .logo__word--hero {
+      display: block;
+      font-size: clamp(2.4rem, 5vw, 3.4rem);
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+      color: #f1f5f9;
+      margin-bottom: 1rem;
+    }
+    .logo__cool {
+      background: linear-gradient(120deg, #93c5fd 0%, #5b9cf5 45%, #3b82f6 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .auth-gate__tagline {
+      margin: 0 0 2rem;
+      font-size: 1.02rem;
+      color: #94a3b8;
+      line-height: 1.55;
+      max-width: 22em;
+    }
+
+    .login-preview {
+      display: grid;
+      gap: 12px;
+      animation: login-float 7s ease-in-out infinite;
+    }
+    @keyframes login-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    .login-preview .mini-card {
+      background: linear-gradient(155deg, rgba(30, 41, 59, 0.72) 0%, rgba(15, 23, 42, 0.78) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 16px;
+      padding: 15px 16px;
+      box-shadow:
+        0 4px 6px rgba(0, 0, 0, 0.15),
+        0 20px 48px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(16px);
+    }
+    .login-preview .mini-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .login-preview .mini-name {
+      font-weight: 600;
+      font-size: 0.92rem;
+      color: #e2e8f0;
+    }
+    .login-preview .mini-badge {
+      font-size: 0.6rem;
+      font-family: var(--mono);
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(52, 211, 153, 0.14);
+      color: #34d399;
+      box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.2);
+    }
+    .login-preview .mini-temps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+    .login-preview .mini-temp {
+      background: rgba(2, 6, 14, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 11px;
+      padding: 9px 6px;
+      text-align: center;
+    }
+    .login-preview .mini-temp .l {
+      font-size: 0.55rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: #64748b;
+      margin-bottom: 5px;
+    }
+    .login-preview .mini-temp .v {
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #34d399;
+      letter-spacing: -0.02em;
+    }
+    .login-preview .mini-card.ghost {
+      opacity: 0.42;
+      transform: scale(0.97);
+      animation: none;
+    }
+
+    /* Login column — soft, embedded */
+    .auth-modal__panel {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-self: stretch;
+      width: 100%;
+      margin: 0;
+      padding: 2.75rem 2.5rem 2.75rem 2rem;
+      z-index: 2;
+      border: none;
+      border-radius: 0;
+      background: linear-gradient(
+        105deg,
+        transparent 0%,
+        rgba(7, 11, 18, 0.15) 12%,
+        rgba(8, 14, 24, 0.42) 55%,
+        rgba(9, 15, 26, 0.55) 100%
+      );
+      backdrop-filter: blur(18px) saturate(1.15);
+      -webkit-backdrop-filter: blur(18px) saturate(1.15);
+      box-shadow: none;
+    }
+    .auth-modal__panel::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 12%;
+      bottom: 12%;
+      width: 1px;
+      background: linear-gradient(
+        180deg,
+        transparent,
+        rgba(91, 156, 245, 0.22) 30%,
+        rgba(91, 156, 245, 0.22) 70%,
+        transparent
+      );
+      pointer-events: none;
+    }
+    .auth-modal__panel h2 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 0 0 0.4rem;
+      color: #f1f5f9;
+    }
+    .auth-gate__subtitle {
+      margin: 0 0 1.5rem;
+      font-size: 0.88rem;
+      color: #94a3b8;
+      line-height: 1.45;
+    }
+    .auth-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      max-width: 300px;
+    }
+    .auth-form .label-field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #94a3b8;
+    }
+    .auth-form .input {
+      background: rgba(2, 6, 14, 0.4);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      color: #f1f5f9;
+      padding: 0.7rem 0.85rem;
+      border-radius: 11px;
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      transition: border-color .18s, background .18s, box-shadow .18s;
+    }
+    .auth-form .input::placeholder { color: #475569; }
+    .auth-form .input:focus {
+      outline: none;
+      border-color: rgba(91, 156, 245, 0.5);
+      background: rgba(2, 6, 14, 0.55);
+      box-shadow: 0 0 0 3px rgba(91, 156, 245, 0.12);
+    }
+    .auth-form .btn--cloud {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin-top: 0.25rem;
+      padding: 0.75rem 1rem;
+      border-radius: 11px;
+      font-weight: 600;
+      font-size: 0.92rem;
+      cursor: pointer;
+      font-family: var(--sans);
+      color: #eff6ff;
+      background: linear-gradient(180deg, rgba(91, 156, 245, 0.35) 0%, rgba(59, 130, 246, 0.28) 100%);
+      border: 1px solid rgba(147, 197, 253, 0.35);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.08) inset,
+        0 8px 24px rgba(37, 99, 235, 0.18);
+      transition: transform .12s, background .15s, border-color .15s, box-shadow .15s;
+    }
+    .auth-form .btn--cloud:hover {
+      background: linear-gradient(180deg, rgba(91, 156, 245, 0.48) 0%, rgba(59, 130, 246, 0.38) 100%);
+      border-color: rgba(147, 197, 253, 0.5);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.1) inset,
+        0 10px 28px rgba(37, 99, 235, 0.28);
+    }
+    .auth-form .btn--cloud:active {
+      transform: translateY(1px);
+    }
+    .auth-form__error {
+      font-size: 0.82rem;
+      color: #94a3b8;
+      margin: 0;
+    }
+    .auth-form__error:empty,
+    .auth-form__error.hidden { display: none !important; }
+
+    @media (max-width: 900px) {
+      .auth-gate__layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      .auth-gate__showcase {
+        padding: 2.5rem 1.5rem 1.25rem;
+        align-items: stretch;
+      }
+      .auth-gate__brand-inner {
+        margin: 0 auto;
+        max-width: 400px;
+      }
+      .login-preview .mini-card.ghost { display: none; }
+      .auth-modal__panel {
+        padding: 1.75rem 1.5rem 2.75rem;
+        background: linear-gradient(180deg, transparent 0%, rgba(7, 11, 18, 0.4) 20%, rgba(8, 14, 24, 0.65) 100%);
+      }
+      .auth-modal__panel::before {
+        left: 12%;
+        right: 12%;
+        top: 0;
+        bottom: auto;
+        width: auto;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(91, 156, 245, 0.25), transparent);
+      }
+      .auth-form { max-width: none; }
+      .login-preview { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>iDRAC <span>Cool</span></h1>
+        <div class="header-meta" style="margin-top:6px">
+          <span class="pill" id="live-pill"><span class="dot"></span> live</span>
+          <span id="host-count">0 hosts</span>
+          <span id="db-label" style="opacity:.7"></span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn" id="btn-refresh" type="button">Vernieuwen</button>
+        <button class="btn" id="btn-settings" type="button" aria-haspopup="true" aria-expanded="false">Settings</button>
+        <div class="settings-menu" id="settings-menu" role="menu">
+          <button type="button" id="menu-account" role="menuitem">My account</button>
+          <div class="settings-lang">
+            <span id="menu-lang-label">Taal</span>
+            <select id="menu-lang" aria-label="Taal">
+              <option value="nl">NL</option>
+              <option value="en">EN</option>
+            </select>
+          </div>
+          <div class="settings-sep"></div>
+          <button type="button" class="danger" id="menu-logout" role="menuitem">Uitloggen</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <!-- Login gate -->
+  <div class="auth-modal--gate hidden" id="login-gate">
+    <div class="auth-gate__bg" aria-hidden="true">
+      <div class="auth-gate__grid"></div>
+      <div class="auth-gate__glow auth-gate__glow--cool"></div>
+      <div class="auth-gate__glow auth-gate__glow--soft"></div>
+    </div>
+    <div class="auth-gate__layout">
+      <section class="auth-gate__showcase" aria-hidden="true">
+        <div class="auth-gate__brand-inner">
+          <span class="logo__word--hero">iDRAC <span class="logo__cool">Cool</span></span>
+          <p class="auth-gate__tagline">Fan- en temperatuurbeheer voor je Dell PowerEdge servers — live via IPMI.</p>
+          <div class="login-preview">
+            <div class="mini-card">
+              <div class="mini-top">
+                <span class="mini-name">minilab2</span>
+                <span class="mini-badge">ONLINE</span>
+              </div>
+              <div class="mini-temps">
+                <div class="mini-temp"><div class="l">Inlet</div><div class="v">27°</div></div>
+                <div class="mini-temp"><div class="l">Outlet</div><div class="v">31°</div></div>
+                <div class="mini-temp"><div class="l">CPU 1</div><div class="v">36°</div></div>
+                <div class="mini-temp"><div class="l">CPU 2</div><div class="v">36°</div></div>
+              </div>
+            </div>
+            <div class="mini-card ghost">
+              <div class="mini-top">
+                <span class="mini-name">minilab</span>
+                <span class="mini-badge">ONLINE</span>
+              </div>
+              <div class="mini-temps">
+                <div class="mini-temp"><div class="l">Inlet</div><div class="v">24°</div></div>
+                <div class="mini-temp"><div class="l">Outlet</div><div class="v">29°</div></div>
+                <div class="mini-temp"><div class="l">CPU 1</div><div class="v">42°</div></div>
+                <div class="mini-temp"><div class="l">CPU 2</div><div class="v">41°</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <div class="auth-modal__panel" role="dialog" aria-labelledby="auth-title" aria-modal="true">
+        <h2 id="auth-title">Inloggen</h2>
+        <p class="auth-gate__subtitle">Welkom terug. Beheer fans en temperatures veilig.</p>
+        <form class="auth-form" id="login-form" autocomplete="off">
+          <label class="label-field">
+            <span>Gebruikersnaam</span>
+            <input type="text" class="input" id="login-user" autocomplete="username" required placeholder="admin">
+          </label>
+          <label class="label-field">
+            <span>Wachtwoord</span>
+            <input type="password" class="input" id="login-pass" autocomplete="current-password" required placeholder="••••••••">
+          </label>
+          <p class="auth-form__error hidden" id="login-error"></p>
+          <button type="submit" class="btn--cloud" id="btn-login">Inloggen</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Account modal (logged in) -->
+  <div class="modal-backdrop hidden" id="account-modal">
+    <div class="modal" style="width:min(440px,100%)">
+      <h2 id="account-title">Account</h2>
+      <p class="sub">Ingelogd als <strong id="account-username">—</strong></p>
+
+      <div class="settings-tabs" style="margin-bottom:14px" id="account-tabs">
+        <button type="button" class="settings-tab active" data-acc-tab="profile">Profiel</button>
+        <button type="button" class="settings-tab" data-acc-tab="users">Accounts</button>
+      </div>
+
+      <div data-acc-pane="profile" class="acc-pane active">
+        <form id="user-form">
+          <div class="field">
+            <label for="acc-username">Nieuwe gebruikersnaam</label>
+            <input id="acc-username" autocomplete="username" minlength="3" maxlength="32" pattern="[a-zA-Z0-9_]{3,32}" />
+            <div class="help">3–32 tekens: letters, cijfers, _</div>
+          </div>
+          <div class="field">
+            <label for="acc-user-pass">Huidig wachtwoord (bevestiging)</label>
+            <input id="acc-user-pass" type="password" autocomplete="current-password" required />
+          </div>
+          <div id="user-error" class="hint hidden" style="margin-bottom:10px"></div>
+          <div id="user-ok" class="hint hidden" style="margin-bottom:10px;color:var(--green)">Gebruikersnaam gewijzigd.</div>
+          <div class="modal-actions" style="margin-top:4px">
+            <button type="submit" class="btn btn-primary">Username opslaan</button>
+          </div>
+        </form>
+        <div class="settings-sep" style="margin:16px 0;height:1px;background:rgba(255,255,255,0.07)"></div>
+        <form id="pw-form">
+          <div class="field">
+            <label for="pw-current">Huidig wachtwoord</label>
+            <input id="pw-current" type="password" autocomplete="current-password" required />
+          </div>
+          <div class="field">
+            <label for="pw-new">Nieuw wachtwoord</label>
+            <input id="pw-new" type="password" autocomplete="new-password" required minlength="6" />
+          </div>
+          <div class="field">
+            <label for="pw-new2">Herhaal nieuw wachtwoord</label>
+            <input id="pw-new2" type="password" autocomplete="new-password" required minlength="6" />
+          </div>
+          <div id="pw-error" class="hint hidden" style="margin-bottom:12px"></div>
+          <div id="pw-ok" class="hint hidden" style="margin-bottom:12px;color:var(--green)">Wachtwoord gewijzigd.</div>
+          <div class="modal-actions">
+            <button type="button" class="btn" id="btn-logout">Uitloggen</button>
+            <button type="button" class="btn" id="btn-account-close">Sluiten</button>
+            <button type="submit" class="btn btn-primary">Wachtwoord wijzigen</button>
+          </div>
+        </form>
+      </div>
+
+      <div data-acc-pane="users" class="acc-pane" style="display:none">
+        <div class="section-label" style="margin-bottom:8px">Nu ingelogd</div>
+        <div id="online-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
+        <div class="settings-sep" style="margin:0 0 14px;height:1px;background:rgba(255,255,255,0.07)"></div>
+        <div class="section-label" style="margin-bottom:8px">Alle accounts</div>
+        <div id="users-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
+        <div class="settings-sep" style="margin:0 0 14px;height:1px;background:rgba(255,255,255,0.07)"></div>
+        <form id="create-user-form">
+          <div class="field">
+            <label for="new-user">Account toevoegen</label>
+            <input id="new-user" minlength="3" maxlength="32" pattern="[a-zA-Z0-9_]{3,32}" required autocomplete="off" placeholder="username" />
+          </div>
+          <div class="field">
+            <label for="new-user-pass">Wachtwoord</label>
+            <input id="new-user-pass" type="password" minlength="6" required autocomplete="new-password" />
+          </div>
+          <div id="create-user-error" class="hint hidden" style="margin-bottom:10px"></div>
+          <div id="create-user-ok" class="hint hidden" style="margin-bottom:10px;color:var(--green)">Account aangemaakt.</div>
+          <div class="modal-actions" style="margin-top:4px">
+            <button type="submit" class="btn btn-primary">Toevoegen</button>
+          </div>
+        </form>
+        <div class="modal-actions" style="margin-top:14px">
+          <button type="button" class="btn" id="btn-account-close2">Sluiten</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal-backdrop hidden" id="modal">
+    <div class="modal">
+      <h2 id="modal-title">iDRAC toevoegen</h2>
+      <p class="sub" id="modal-sub">IP of hostname · auto-detect model, sensors en fans via IPMI</p>
+      <form id="add-form">
+        <input type="hidden" id="f-edit-id" value="" />
+        <div class="field">
+          <label for="f-name">Naam *</label>
+          <input id="f-name" name="name" required placeholder="bv. minilab2" autocomplete="off" />
+          <div class="help">Zichtbare titel op het panel (bv. Proxmox node-naam).</div>
+        </div>
+        <div class="field">
+          <label for="f-host">IP / hostname *</label>
+          <input id="f-host" name="host" required placeholder="10.0.10.50" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="f-user">Username (optioneel)</label>
+          <input id="f-user" name="username" placeholder="standaard uit config / env" autocomplete="username" />
+        </div>
+        <div class="field">
+          <label for="f-pass">Password (optioneel)</label>
+          <input id="f-pass" name="password" type="password" placeholder="of IDRAC_PASSWORD env" autocomplete="current-password" />
+          <div class="help" id="f-pass-help">Wordt lokaal in de SQLite-DB opgeslagen. Bij bewerken: leeg = ongewijzigd.</div>
+        </div>
+        <div id="form-error" class="hint hidden" style="margin-bottom:12px"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn" id="btn-cancel">Annuleren</button>
+          <button type="submit" class="btn btn-primary" id="btn-save">Detecteer &amp; toevoegen</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const grid = document.getElementById("grid");
+    const modal = document.getElementById("modal");
+    const form = document.getElementById("add-form");
+    const formError = document.getElementById("form-error");
+    const loginGate = document.getElementById("login-gate");
+    const accountModal = document.getElementById("account-modal");
+    const TOKEN_KEY = "idrac_dash_token";
+    let meta = { fan_presets: [15, 20, 25, 30, 40, 50], fan_min_percent: 10, fan_max_percent: 50, mock: false };
+    let busyIds = new Set();
+    let lastHosts = [];
+    let bound = false; // event delegation once
+    let editHostId = null; // null = add mode
+    let authUser = null;
+
+    function getToken() {
+      return localStorage.getItem(TOKEN_KEY) || "";
+    }
+    function setToken(t) {
+      if (t) localStorage.setItem(TOKEN_KEY, t);
+      else localStorage.removeItem(TOKEN_KEY);
+    }
+    function authHeaders() {
+      const t = getToken();
+      return t ? { "Authorization": "Bearer " + t, "X-Session-Token": t } : {};
+    }
+    function showLoginGate() {
+      loginGate.classList.remove("hidden");
+      accountModal.classList.add("hidden");
+      document.getElementById("login-error").classList.add("hidden");
+      document.getElementById("login-user").focus();
+    }
+    function hideLoginGate() {
+      loginGate.classList.add("hidden");
+    }
+    function updateAccountBtn() {
+      /* account zit nu in settings-menu */
+    }
+
+    const LANG_KEY = "idrac_dash_lang";
+    const i18n = {
+      nl: {
+        refresh: "Vernieuwen",
+        settings: "Settings",
+        myAccount: "My account",
+        language: "Taal",
+        logout: "Uitloggen",
+        loginTitle: "Inloggen",
+        loginSub: "Welkom terug. Beheer fans en temperatures veilig.",
+        username: "Gebruikersnaam",
+        password: "Wachtwoord",
+        loginBtn: "Inloggen",
+        accountTitle: "Account",
+        accountSub: "Ingelogd als",
+        pwCurrent: "Huidig wachtwoord",
+        pwNew: "Nieuw wachtwoord",
+        pwNew2: "Herhaal nieuw wachtwoord",
+        pwSave: "Wachtwoord wijzigen",
+        close: "Sluiten",
+      },
+      en: {
+        refresh: "Refresh",
+        settings: "Settings",
+        myAccount: "My account",
+        language: "Language",
+        logout: "Log out",
+        loginTitle: "Sign in",
+        loginSub: "Welcome back. Manage fans and temperatures securely.",
+        username: "Username",
+        password: "Password",
+        loginBtn: "Sign in",
+        accountTitle: "Account",
+        accountSub: "Signed in as",
+        pwCurrent: "Current password",
+        pwNew: "New password",
+        pwNew2: "Repeat new password",
+        pwSave: "Change password",
+        close: "Close",
+      },
+    };
+    let lang = localStorage.getItem(LANG_KEY) || "nl";
+    if (!i18n[lang]) lang = "nl";
+
+    function t(key) {
+      return (i18n[lang] && i18n[lang][key]) || i18n.nl[key] || key;
+    }
+
+    function applyLang() {
+      const btnRefresh = document.getElementById("btn-refresh");
+      const btnSettings = document.getElementById("btn-settings");
+      if (btnRefresh) btnRefresh.textContent = t("refresh");
+      if (btnSettings) btnSettings.textContent = t("settings");
+      const menuAccount = document.getElementById("menu-account");
+      const menuLogout = document.getElementById("menu-logout");
+      const menuLangLabel = document.getElementById("menu-lang-label");
+      if (menuAccount) menuAccount.textContent = t("myAccount");
+      if (menuLogout) menuLogout.textContent = t("logout");
+      if (menuLangLabel) menuLangLabel.textContent = t("language");
+      const langSel = document.getElementById("menu-lang");
+      if (langSel) langSel.value = lang;
+
+      const authTitle = document.getElementById("auth-title");
+      const authSub = document.querySelector("#login-gate .auth-gate__subtitle");
+      const loginBtn = document.getElementById("btn-login");
+      if (authTitle) authTitle.textContent = t("loginTitle");
+      if (authSub) authSub.textContent = t("loginSub");
+      if (loginBtn) loginBtn.textContent = t("loginBtn");
+      const loginUserLab = document.querySelector('label.label-field[for="login-user"], #login-form .label-field:first-of-type span');
+      const labels = document.querySelectorAll("#login-form .label-field > span");
+      if (labels[0]) labels[0].textContent = t("username");
+      if (labels[1]) labels[1].textContent = t("password");
+
+      const accH2 = document.querySelector("#account-modal h2");
+      if (accH2) accH2.textContent = t("accountTitle");
+      const accSub = document.querySelector("#account-modal .sub");
+      if (accSub && authUser) {
+        accSub.innerHTML = t("accountSub") + " <strong id=\"account-username\">" + escapeHtml(authUser.username) + "</strong>";
+      }
+      const pwLabs = document.querySelectorAll("#pw-form .field label");
+      if (pwLabs[0]) pwLabs[0].textContent = t("pwCurrent");
+      if (pwLabs[1]) pwLabs[1].textContent = t("pwNew");
+      if (pwLabs[2]) pwLabs[2].textContent = t("pwNew2");
+      const pwSubmit = document.querySelector("#pw-form button[type=submit]");
+      if (pwSubmit) pwSubmit.textContent = t("pwSave");
+      const accClose = document.getElementById("btn-account-close");
+      if (accClose) accClose.textContent = t("close");
+      const accLogout = document.getElementById("btn-logout");
+      if (accLogout) accLogout.textContent = t("logout");
+    }
+
+    function closeSettingsMenu() {
+      const menu = document.getElementById("settings-menu");
+      const btn = document.getElementById("btn-settings");
+      if (menu) menu.classList.remove("open");
+      if (btn) btn.setAttribute("aria-expanded", "false");
+    }
+
+    function toggleSettingsMenu() {
+      if (!authUser) {
+        showLoginGate();
+        return;
+      }
+      const menu = document.getElementById("settings-menu");
+      const btn = document.getElementById("btn-settings");
+      const open = !menu.classList.contains("open");
+      menu.classList.toggle("open", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+
+    function tempClass(kind, v) {
+      if (v == null || Number.isNaN(v)) return "na";
+      if (kind === "inlet") {
+        if (v > 35) return "hot";
+        if (v >= 28) return "warn";
+        return "ok";
+      }
+      if (v > 75) return "hot";
+      if (v >= 60) return "warn";
+      return "ok";
+    }
+
+    function fmtTemp(v) {
+      if (v == null || Number.isNaN(v)) return "—";
+      return String(Math.round(v));
+    }
+
+    function modeLabel(mode) {
+      if (mode === "dell_auto") return { text: "DELL", cls: "mode-dell" };
+      if (mode === "manual") return { text: "MANUAL", cls: "mode-manual" };
+      return { text: "AUTO 30%", cls: "mode-smart" };
+    }
+
+    /** true = custom-veld is actief (geen preset-knop highlight) */
+    function isCustomFanUi(h) {
+      if (h.mode !== "manual") return false;
+      if (h.fan_ui === "custom") return true;
+      const applied = h.applied_percent ?? h.desired_percent;
+      if (applied == null) return false;
+      const presets = (h.fan_presets || meta.fan_presets || []).map(Number);
+      return !presets.includes(Number(applied));
+    }
+
+    function customFanValue(h) {
+      if (h.mode !== "manual") return "";
+      const applied = h.applied_percent ?? h.desired_percent;
+      if (applied == null) return "";
+      if (isCustomFanUi(h)) return String(applied);
+      // ook bij preset: toon niets in custom, behalve localStorage draft
+      return "";
+    }
+
+    function fanChipsHtml(fans) {
+      if (!fans || !fans.length) {
+        return `<span class="fan-chip empty">geen data</span>`;
+      }
+      const chips = fans
+        .filter(f => f.rpm != null)
+        .slice(0, 4)
+        .map(f => {
+          const rpm = f.rpm >= 1000 ? (f.rpm / 1000).toFixed(1) + "k" : Math.round(f.rpm);
+          return `<span class="fan-chip">${escapeHtml(rpm)}</span>`;
+        });
+      return chips.length ? chips.join("") : `<span class="fan-chip empty">geen RPM</span>`;
+    }
+
+    function tempBarPct(kind, v) {
+      if (v == null || Number.isNaN(v)) return 0;
+      // map typical ranges to 0–100 visual
+      if (kind === "inlet") return Math.max(0, Math.min(100, ((v - 10) / 30) * 100));
+      return Math.max(0, Math.min(100, ((v - 25) / 65) * 100));
+    }
+
+    function cpuTilesFrom(h) {
+      const cpuList = Array.isArray(h.temps?.cpu) ? h.temps.cpu : [];
+      const tiles = cpuList.map((c, i) => {
+        const raw = (c.label || "").trim();
+        let label = raw;
+        const m = raw.match(/^temp\s*(\d*)$/i);
+        if (m) {
+          label = m[1] ? `CPU ${m[1]}` : (cpuList.length > 1 ? `CPU ${i + 1}` : "CPU");
+        } else if (/^cpu/i.test(raw)) {
+          label = raw.replace(/\s+/g, " ");
+        } else if (cpuList.length > 1) {
+          label = `CPU ${i + 1}`;
+        } else {
+          label = raw || "CPU";
+        }
+        return { label, celsius: c.celsius };
+      });
+      if (!tiles.length && h.temps?.cpu_max != null) {
+        tiles.push({ label: "CPU", celsius: h.temps.cpu_max });
+      }
+      return tiles;
+    }
+
+    function hintHtml(h) {
+      const isAuto = h.mode === "smart_auto" || h.mode === "dell_auto";
+      const isDell = h.mode === "dell_auto";
+      const applied = h.applied_percent ?? h.desired_percent;
+      if (h.last_error) return `<div class="hint" data-role="hint">${escapeHtml(h.last_error)}</div>`;
+      if (isDell) return `<div class="hint" data-role="hint">Dell Auto: firmware regelt fans (kan luid worden).</div>`;
+      if (isAuto) return `<div class="hint" data-role="hint">Dashboard Auto: fans op temp, max 30%.</div>`;
+      return `<div class="hint" data-role="hint">Handmatig ${applied ?? "—"}% (tot ${meta.fan_max_percent || 50}%).</div>`;
+    }
+
+    function detectHtml(det) {
+      if (!det) {
+        return `<div class="detect-box" data-role="detect">Nog niet gedetecteerd</div>`;
+      }
+      const parts = [
+        det.model || det.product || null,
+        det.firmware ? "FW " + det.firmware : null,
+        det.serial ? "S/T " + det.serial : null,
+      ].filter(Boolean);
+      return `<div class="detect-box" data-role="detect" title="${escapeHtml(parts.join(" · "))}">${escapeHtml(parts.join(" · ") || "—")}</div>`;
+    }
+
+    function tempTile(label, kind, value, attrs = "") {
+      const cls = tempClass(kind, value);
+      const pct = tempBarPct(kind, value);
+      const has = value != null && !Number.isNaN(value);
+      return `
+        <div class="temp" ${attrs}>
+          <div class="label" title="${escapeHtml(label)}">${escapeHtml(label)}</div>
+          <div class="val-row">
+            <span class="val ${cls}" data-role="temp-val">${fmtTemp(value)}</span>
+            <span class="unit" data-role="temp-unit" style="${has ? "" : "visibility:hidden"}">°C</span>
+          </div>
+          <div class="bar"><i class="${cls}" data-role="temp-bar" style="width:${pct}%"></i></div>
+        </div>
+      `;
+    }
+
+    function tempsHtml(h) {
+      const inlet = h.temps?.inlet;
+      const outlet = h.temps?.outlet;
+      const cpuTiles = cpuTilesFrom(h);
+      const cpuHtml = cpuTiles.map(c =>
+        tempTile(c.label, "cpu", c.celsius, `data-cpu="${escapeHtml(c.label)}"`)
+      ).join("") || tempTile("CPU", "cpu", null);
+
+      return `
+        ${tempTile("Inlet", "inlet", inlet, 'data-role="inlet-wrap"')}
+        ${tempTile("Outlet", "cpu", outlet, 'data-role="outlet-wrap"')}
+        ${cpuHtml}
+      `;
+    }
+
+    function tempsClass(h) {
+      const n = 2 + Math.max(cpuTilesFrom(h).length, 1);
+      return n >= 4 ? "temps cols-4" : "temps cols-3";
+    }
+
+    function cardHtml(h, { enter = false } = {}) {
+      const isAuto = h.mode === "smart_auto" || h.mode === "dell_auto";
+      const isDell = h.mode === "dell_auto";
+      const isManual = h.mode === "manual";
+      const ml = modeLabel(h.mode);
+      const busy = busyIds.has(h.id);
+      const presets = h.fan_presets || meta.fan_presets || [15, 20, 25, 30, 40, 50];
+      const applied = h.applied_percent ?? h.desired_percent;
+      // custom = geen preset-knop oplichten, ook als % toevallig 40 is
+      const isCustomUi = isCustomFanUi(h);
+      const enterCls = enter ? " card-enter" : "";
+
+      return `
+        <article class="card${enterCls}${busy ? " busy" : ""}" data-id="${escapeHtml(h.id)}">
+          <div class="card-head">
+            <div>
+              <div class="card-title" data-role="title">${escapeHtml(h.name || h.id)}</div>
+              <div class="card-sub" data-role="sub">${escapeHtml(h.host)}${h.model ? " · " + escapeHtml(h.model) : ""}</div>
+            </div>
+            <div class="status-col">
+              <span class="badge ${h.online ? "online" : "offline"}" data-role="online">${h.online ? "ONLINE" : "OFFLINE"}</span>
+              <span class="badge ${ml.cls}" data-role="mode">${ml.text}${!isDell && applied != null ? " · " + applied + "%" : ""}</span>
+            </div>
+          </div>
+
+          <div class="card-body">
+            <div class="metrics">
+              <div class="${tempsClass(h)}" data-role="temps">${tempsHtml(h)}</div>
+              <div class="fans-row" data-role="fans">
+                <span class="fans-label">Fans</span>
+                ${fanChipsHtml(h.fans)}
+              </div>
+            </div>
+
+            <div class="controls">
+              <div>
+                <div class="section-label">Mode</div>
+                <div class="mode-toggle">
+                  <button type="button" class="${isAuto ? "active-auto" : ""}" data-action="auto" data-id="${escapeHtml(h.id)}">Auto</button>
+                  <button type="button" class="${isManual ? "active-manual" : ""}" data-action="manual" data-id="${escapeHtml(h.id)}">Handmatig</button>
+                </div>
+              </div>
+              <label class="dell-check ${isAuto ? "" : "hidden"} ${isDell ? "on" : ""}" data-role="dell-wrap">
+                <input type="checkbox" data-action="dell" data-id="${escapeHtml(h.id)}" ${isDell ? "checked" : ""} />
+                <span class="txt">
+                  <strong>Dell Auto</strong>
+                  <small>Firmware i.p.v. dashboard. Kan luid / &gt;50% worden.</small>
+                </span>
+              </label>
+              <div>
+                <div class="section-label" data-role="fan-label">Fan snelheid ${isManual ? "" : "· alleen handmatig"}</div>
+                <div class="fan-btns" data-role="fan-btns">
+                  ${presets.map(p => `
+                    <button type="button" data-action="fan" data-id="${escapeHtml(h.id)}" data-pct="${p}"
+                      class="${isManual && !isCustomUi && Number(applied) === p ? "active" : ""}"
+                      ${isManual ? "" : "disabled"}>${p}%</button>
+                  `).join("")}
+                </div>
+                <div class="fan-custom" data-role="fan-custom">
+                  <div class="custom-input-wrap ${isManual ? "" : "disabled"}" data-role="custom-wrap">
+                    <input type="number"
+                      data-role="custom-pct"
+                      data-id="${escapeHtml(h.id)}"
+                      min="${meta.fan_min_percent || 10}"
+                      max="${meta.fan_max_percent || 50}"
+                      step="1"
+                      placeholder="${meta.fan_min_percent || 10}–${meta.fan_max_percent || 50}"
+                      value="${escapeHtml(customFanValue(h))}"
+                      ${isManual ? "" : "disabled"} />
+                    <div class="stepper">
+                      <button type="button" data-action="fan-step" data-dir="1" data-id="${escapeHtml(h.id)}" title="+1%" ${isManual ? "" : "disabled"} aria-label="Verhoog">
+                        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8l4-4 4 4"/></svg>
+                      </button>
+                      <button type="button" data-action="fan-step" data-dir="-1" data-id="${escapeHtml(h.id)}" title="-1%" ${isManual ? "" : "disabled"} aria-label="Verlaag">
+                        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l4 4 4-4"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <button type="button" class="btn-set"
+                    data-action="fan-custom"
+                    data-id="${escapeHtml(h.id)}"
+                    ${isManual ? "" : "disabled"}>Custom</button>
+                </div>
+              </div>
+              <div data-role="hint-wrap">${hintHtml(h)}</div>
+            </div>
+          </div>
+
+          <div class="card-foot">
+            <div data-role="detect-wrap">${detectHtml(h.detect)}</div>
+            <div class="card-actions">
+              <button type="button" class="btn" data-action="edit" data-id="${escapeHtml(h.id)}" title="Naam / IP bewerken">Edit</button>
+              <button type="button" class="btn" data-action="detect" data-id="${escapeHtml(h.id)}">Detecteer</button>
+              ${h.removable
+                ? `<button type="button" class="btn btn-danger" data-action="remove" data-id="${escapeHtml(h.id)}">Verwijder</button>`
+                : `<span class="badge" style="opacity:.7" title="Gedefinieerd in config.yaml">config</span>`}
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    function setTempVal(wrap, kind, value) {
+      if (!wrap) return;
+      const el = wrap.querySelector('[data-role="temp-val"]') || wrap.querySelector(".val");
+      const bar = wrap.querySelector('[data-role="temp-bar"]');
+      const cls = tempClass(kind, value);
+      if (el) {
+        const text = fmtTemp(value);
+        if (el.textContent !== text) el.textContent = text;
+        el.className = "val " + cls;
+      }
+      if (bar) {
+        bar.className = cls;
+        bar.style.width = tempBarPct(kind, value) + "%";
+      }
+    }
+
+    function patchCard(el, h) {
+      const isAuto = h.mode === "smart_auto" || h.mode === "dell_auto";
+      const isDell = h.mode === "dell_auto";
+      const isManual = h.mode === "manual";
+      const ml = modeLabel(h.mode);
+      const applied = h.applied_percent ?? h.desired_percent;
+      const busy = busyIds.has(h.id);
+
+      el.classList.toggle("busy", busy);
+
+      const title = el.querySelector('[data-role="title"]');
+      const sub = el.querySelector('[data-role="sub"]');
+      if (title && title.textContent !== (h.name || h.id)) title.textContent = h.name || h.id;
+      const subText = h.host + (h.model ? " · " + h.model : "");
+      if (sub && sub.textContent !== subText) sub.textContent = subText;
+
+      const online = el.querySelector('[data-role="online"]');
+      if (online) {
+        online.textContent = h.online ? "ONLINE" : "OFFLINE";
+        online.className = "badge " + (h.online ? "online" : "offline");
+      }
+      const modeEl = el.querySelector('[data-role="mode"]');
+      if (modeEl) {
+        const t = ml.text + (!isDell && applied != null ? " · " + applied + "%" : "");
+        modeEl.textContent = t;
+        modeEl.className = "badge " + ml.cls;
+      }
+
+      const temps = el.querySelector('[data-role="temps"]');
+      const tiles = cpuTilesFrom(h);
+      const existingCpu = temps ? [...temps.querySelectorAll("[data-cpu]")].map(n => n.getAttribute("data-cpu")) : [];
+      const newCpu = tiles.map(t => t.label);
+      if (!temps || existingCpu.join("|") !== newCpu.join("|")) {
+        if (temps) {
+          temps.className = tempsClass(h);
+          temps.innerHTML = tempsHtml(h);
+        }
+      } else {
+        setTempVal(temps.querySelector('[data-role="inlet-wrap"]'), "inlet", h.temps?.inlet);
+        setTempVal(temps.querySelector('[data-role="outlet-wrap"]'), "cpu", h.temps?.outlet);
+        tiles.forEach(t => {
+          setTempVal(temps.querySelector(`[data-cpu="${CSS.escape(t.label)}"]`), "cpu", t.celsius);
+        });
+      }
+
+      const fans = el.querySelector('[data-role="fans"]');
+      if (fans) {
+        const next = `<span class="fans-label">Fans</span>${fanChipsHtml(h.fans)}`;
+        if (fans.innerHTML !== next) fans.innerHTML = next;
+      }
+
+      const autoBtn = el.querySelector('[data-action="auto"]');
+      const manBtn = el.querySelector('[data-action="manual"]');
+      if (autoBtn) autoBtn.className = isAuto ? "active-auto" : "";
+      if (manBtn) manBtn.className = isManual ? "active-manual" : "";
+
+      const dellWrap = el.querySelector('[data-role="dell-wrap"]');
+      if (dellWrap) {
+        dellWrap.classList.toggle("hidden", !isAuto);
+        dellWrap.classList.toggle("on", isDell);
+        const cb = dellWrap.querySelector('input[type="checkbox"]');
+        if (cb && cb.checked !== isDell) cb.checked = isDell;
+      }
+
+      const fanLabel = el.querySelector('[data-role="fan-label"]');
+      if (fanLabel) fanLabel.textContent = "Fan snelheid " + (isManual ? "" : "· alleen handmatig");
+
+      const isCustomUi = isCustomFanUi(h);
+      el.querySelectorAll('[data-action="fan"]').forEach(btn => {
+        const p = Number(btn.getAttribute("data-pct"));
+        btn.disabled = !isManual;
+        // bij custom: nooit een preset-knop oplichten
+        btn.classList.toggle("active", isManual && !isCustomUi && Number(applied) === p);
+      });
+
+      const customWrap = el.querySelector('[data-role="fan-custom"]');
+      if (customWrap) {
+        customWrap.classList.remove("active");
+        const wrap = customWrap.querySelector('[data-role="custom-wrap"]');
+        const inp = customWrap.querySelector('[data-role="custom-pct"]');
+        const setBtn = customWrap.querySelector('[data-action="fan-custom"]');
+        const stepBtns = customWrap.querySelectorAll('[data-action="fan-step"]');
+        if (wrap) wrap.classList.toggle("disabled", !isManual);
+        if (inp) {
+          inp.disabled = !isManual;
+          inp.min = meta.fan_min_percent || 10;
+          inp.max = meta.fan_max_percent || 50;
+          // na refresh/poll: custom-waarde terugzetten (niet wissen)
+          if (document.activeElement !== inp) {
+            const keep = customFanValue(h);
+            if (keep !== "") {
+              if (String(inp.value) !== keep) inp.value = keep;
+            } else if (!isManual) {
+              inp.value = "";
+            } else if (!isCustomUi) {
+              inp.value = "";
+            }
+          }
+        }
+        if (setBtn) setBtn.disabled = !isManual;
+        stepBtns.forEach(b => { b.disabled = !isManual; });
+      }
+
+      const hintWrap = el.querySelector('[data-role="hint-wrap"]');
+      if (hintWrap) {
+        const next = hintHtml(h);
+        if (hintWrap.innerHTML !== next) hintWrap.innerHTML = next;
+      }
+      const detWrap = el.querySelector('[data-role="detect-wrap"]');
+      if (detWrap) {
+        const next = detectHtml(h.detect);
+        if (detWrap.innerHTML !== next) detWrap.innerHTML = next;
+      }
+    }
+
+    async function api(path, opts = {}) {
+      const headers = {
+        "Content-Type": "application/json",
+        ...authHeaders(),
+        ...(opts.headers || {}),
+      };
+      const res = await fetch(path, { ...opts, headers });
+      let data = null;
+      try { data = await res.json(); } catch { /* empty */ }
+      if (res.status === 401 && path !== "/api/auth/login") {
+        authUser = null;
+        setToken("");
+        updateAccountBtn();
+        showLoginGate();
+        throw new Error("Niet ingelogd");
+      }
+      if (!res.ok) {
+        const msg = (data && (data.detail || data.message)) || res.statusText;
+        throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+      }
+      return data;
+    }
+
+    async function ensureAuth() {
+      const t = getToken();
+      if (!t) {
+        showLoginGate();
+        return false;
+      }
+      try {
+        authUser = await api("/api/auth/me");
+        updateAccountBtn();
+        hideLoginGate();
+        return true;
+      } catch {
+        showLoginGate();
+        return false;
+      }
+    }
+
+    function openModal() {
+      editHostId = null;
+      setErrorEl(formError, "");
+      form.reset();
+      document.getElementById("f-edit-id").value = "";
+      document.getElementById("modal-title").textContent = "iDRAC toevoegen";
+      document.getElementById("modal-sub").textContent =
+        "IP of hostname · auto-detect model, sensors en fans via IPMI";
+      document.getElementById("f-pass").placeholder = "of IDRAC_PASSWORD env";
+      document.getElementById("f-pass-help").textContent =
+        "Wordt lokaal in de SQLite-DB opgeslagen.";
+      document.getElementById("btn-save").textContent = "Detecteer & toevoegen";
+      document.getElementById("f-name").required = false;
+      modal.classList.remove("hidden");
+      document.getElementById("f-host").focus();
+    }
+
+    function openEditModal(id) {
+      const h = lastHosts.find(x => x.id === id);
+      if (!h) return;
+      editHostId = id;
+      setErrorEl(formError, "");
+      form.reset();
+      document.getElementById("f-edit-id").value = id;
+      document.getElementById("modal-title").textContent = "Panel bewerken";
+      document.getElementById("modal-sub").textContent =
+        "Geef een duidelijke naam (bv. minilab2) om panels te onderscheiden.";
+      document.getElementById("f-name").value = h.name || "";
+      document.getElementById("f-name").required = true;
+      document.getElementById("f-host").value = h.host || "";
+      document.getElementById("f-user").value = "";
+      document.getElementById("f-pass").value = "";
+      document.getElementById("f-pass").placeholder = "leeg = ongewijzigd";
+      document.getElementById("f-pass-help").textContent =
+        "Username/password leeg laten behoudt de huidige waarden.";
+      document.getElementById("btn-save").textContent = "Opslaan";
+      modal.classList.remove("hidden");
+      document.getElementById("f-name").focus();
+      document.getElementById("f-name").select();
+    }
+
+    function closeModal() {
+      modal.classList.add("hidden");
+      editHostId = null;
+    }
+
+    async function setMode(id, payload) {
+      busyIds.add(id);
+      patchBusyOnly();
+      try {
+        await api(`/api/hosts/${id}/mode`, { method: "POST", body: JSON.stringify(payload) });
+        await refresh();
+      } catch (e) {
+        alert(e.message);
+        await refresh();
+      } finally {
+        busyIds.delete(id);
+        patchBusyOnly();
+      }
+    }
+
+    async function setFan(id, percent, source = "preset") {
+      busyIds.add(id);
+      patchBusyOnly();
+      try {
+        await api(`/api/hosts/${id}/fan`, {
+          method: "POST",
+          body: JSON.stringify({ percent, source }),
+        });
+        await refresh();
+      } catch (e) {
+        alert(e.message);
+        await refresh();
+      } finally {
+        busyIds.delete(id);
+        patchBusyOnly();
+      }
+    }
+
+    async function detectHost(id) {
+      busyIds.add(id);
+      patchBusyOnly();
+      try {
+        await api(`/api/hosts/${id}/detect`, { method: "POST", body: "{}" });
+        await refresh();
+      } catch (e) {
+        alert(e.message);
+      } finally {
+        busyIds.delete(id);
+        patchBusyOnly();
+      }
+    }
+
+    async function removeHost(id) {
+      if (!confirm("iDRAC-node verwijderen uit de database?")) return;
+      try {
+        await api(`/api/hosts/${id}`, { method: "DELETE" });
+        await refresh({ forceRebuild: true });
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    function patchBusyOnly() {
+      lastHosts.forEach(h => {
+        const el = grid.querySelector(`.card[data-id="${CSS.escape(h.id)}"]`);
+        if (el) el.classList.toggle("busy", busyIds.has(h.id));
+      });
+    }
+
+    function ensureDelegation() {
+      if (bound) return;
+      bound = true;
+      grid.addEventListener("click", (ev) => {
+        const add = ev.target.closest("#card-add");
+        if (add) { openModal(); return; }
+        const el = ev.target.closest("[data-action]");
+        if (!el || !grid.contains(el)) return;
+        if (el.matches('input[type="checkbox"]')) return;
+        onAction(el);
+      });
+      grid.addEventListener("change", (ev) => {
+        const el = ev.target.closest('input[data-action="dell"]');
+        if (el) onAction(el);
+      });
+      grid.addEventListener("keydown", (ev) => {
+        if (ev.key !== "Enter") return;
+        const inp = ev.target.closest('[data-role="custom-pct"]');
+        if (!inp || !grid.contains(inp)) return;
+        ev.preventDefault();
+        const id = inp.getAttribute("data-id");
+        const card = inp.closest(".card");
+        const btn = card?.querySelector('[data-action="fan-custom"]');
+        if (btn && id) onAction(btn);
+      });
+    }
+
+    function render(hosts, { forceRebuild = false, animateNew = false } = {}) {
+      lastHosts = hosts;
+      document.getElementById("host-count").textContent =
+        hosts.length + " host" + (hosts.length === 1 ? "" : "s");
+
+      ensureDelegation();
+
+      const existing = [...grid.querySelectorAll(".card[data-id]")];
+      const existingIds = existing.map(el => el.dataset.id);
+      const newIds = hosts.map(h => h.id);
+      const structureChanged =
+        forceRebuild ||
+        existingIds.length !== newIds.length ||
+        existingIds.some((id, i) => id !== newIds[i]) ||
+        !grid.querySelector("#card-add");
+
+      if (structureChanged) {
+        const known = new Set(existingIds);
+        const html = [];
+        if (!hosts.length) {
+          html.push(`<div class="empty">Nog geen nodes. Voeg een iDRAC toe met + of vul config.yaml.</div>`);
+        }
+        hosts.forEach(h => {
+          const isNew = animateNew && !known.has(h.id);
+          html.push(cardHtml(h, { enter: isNew || existingIds.length === 0 }));
+        });
+        html.push(`
+          <div class="card card-add" id="card-add" role="button" tabindex="0">
+            <div class="plus">+</div>
+            <div class="add-title">iDRAC toevoegen</div>
+            <div class="add-sub">Auto-detect model &amp; sensors</div>
+          </div>
+        `);
+        grid.innerHTML = html.join("");
+        grid.querySelectorAll(".card-enter").forEach(el => {
+          el.addEventListener("animationend", () => el.classList.remove("card-enter"), { once: true });
+        });
+        return;
+      }
+
+      // In-place update — geen flicker / geen re-animatie
+      hosts.forEach(h => {
+        const el = grid.querySelector(`.card[data-id="${CSS.escape(h.id)}"]`);
+        if (el) patchCard(el, h);
+      });
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    async function onAction(el) {
+      const action = el.getAttribute("data-action");
+      const id = el.getAttribute("data-id");
+      if (!action || !id) return;
+      if (action === "auto") {
+        await setMode(id, { auto: true, dell_auto: false, mode: "smart_auto" });
+      } else if (action === "manual") {
+        await setMode(id, { auto: false, mode: "manual" });
+      } else if (action === "dell") {
+        const checked = el.checked;
+        await setMode(id, { auto: true, dell_auto: checked, mode: checked ? "dell_auto" : "smart_auto" });
+      } else if (action === "fan") {
+        await setFan(id, Number(el.getAttribute("data-pct")), "preset");
+      } else if (action === "fan-step") {
+        const card = el.closest(".card");
+        const inp = card?.querySelector('[data-role="custom-pct"]');
+        if (!inp || inp.disabled) return;
+        const min = meta.fan_min_percent || 10;
+        const max = meta.fan_max_percent || 50;
+        const dir = Number(el.getAttribute("data-dir") || 1);
+        let cur = Number(inp.value);
+        if (!Number.isFinite(cur)) cur = min;
+        cur = Math.max(min, Math.min(max, Math.round(cur) + dir));
+        inp.value = String(cur);
+      } else if (action === "fan-custom") {
+        const card = el.closest(".card");
+        const inp = card?.querySelector('[data-role="custom-pct"]');
+        const min = meta.fan_min_percent || 10;
+        const max = meta.fan_max_percent || 50;
+        const val = Number(inp?.value);
+        if (!Number.isFinite(val) || val < min || val > max) {
+          alert(`Custom % moet tussen ${min} en ${max} liggen`);
+          return;
+        }
+        await setFan(id, Math.round(val), "custom");
+      } else if (action === "edit") {
+        openEditModal(id);
+      } else if (action === "detect") {
+        await detectHost(id);
+      } else if (action === "remove") {
+        await removeHost(id);
+      }
+    }
+
+    async function refresh(opts = {}) {
+      try {
+        const data = await api("/api/hosts");
+        render(data.hosts || [], opts);
+        const pill = document.getElementById("live-pill");
+        pill.classList.toggle("mock", !!meta.mock);
+        pill.innerHTML = meta.mock
+          ? '<span class="dot"></span> mock'
+          : '<span class="dot"></span> live';
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setErrorEl(formError, "");
+      const btn = document.getElementById("btn-save");
+      const isEdit = !!editHostId;
+      btn.disabled = true;
+      btn.textContent = isEdit ? "Opslaan…" : "Detecteren…";
+      const name = document.getElementById("f-name").value.trim();
+      const host = document.getElementById("f-host").value.trim();
+      const username = document.getElementById("f-user").value.trim();
+      const password = document.getElementById("f-pass").value;
+      try {
+        if (isEdit) {
+          const body = {
+            name: name || null,
+            host: host || null,
+            username: username || null,
+            password: password || null,
+          };
+          await api(`/api/hosts/${encodeURIComponent(editHostId)}/edit`, {
+            method: "POST",
+            body: JSON.stringify(body),
+          });
+          closeModal();
+          await refresh({ forceRebuild: true });
+        } else {
+          await api("/api/hosts", {
+            method: "POST",
+            body: JSON.stringify({
+              host,
+              name: name || null,
+              username: username || null,
+              password: password || null,
+              detect: true,
+            }),
+          });
+          closeModal();
+          await refresh({ animateNew: true });
+        }
+      } catch (err) {
+        setErrorEl(formError, err.message || "Er ging iets mis");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = isEdit ? "Opslaan" : "Detecteer & toevoegen";
+      }
+    });
+
+    // never show empty error bars
+    function setErrorEl(el, msg) {
+      if (!el) return;
+      if (msg) {
+        el.textContent = msg;
+        el.classList.remove("hidden");
+      } else {
+        el.textContent = "";
+        el.classList.add("hidden");
+      }
+    }
+
+    document.getElementById("btn-cancel").addEventListener("click", closeModal);
+    document.getElementById("btn-refresh").addEventListener("click", () => refresh());
+    modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const err = document.getElementById("login-error");
+      setErrorEl(err, "");
+      try {
+        const data = await api("/api/auth/login", {
+          method: "POST",
+          body: JSON.stringify({
+            username: document.getElementById("login-user").value.trim(),
+            password: document.getElementById("login-pass").value,
+          }),
+        });
+        setToken(data.token);
+        try {
+          authUser = await api("/api/auth/me");
+        } catch {
+          authUser = { username: data.username };
+        }
+        updateAccountBtn();
+        hideLoginGate();
+        document.getElementById("login-pass").value = "";
+        applyLang();
+        await refresh({ forceRebuild: true });
+      } catch (ex) {
+        setErrorEl(err, ex.message || "Login mislukt");
+      }
+    });
+
+    function openAccTab(name) {
+      document.querySelectorAll("#account-tabs .settings-tab").forEach(t => {
+        t.classList.toggle("active", t.getAttribute("data-acc-tab") === name);
+      });
+      document.querySelectorAll(".acc-pane").forEach(p => {
+        const on = p.getAttribute("data-acc-pane") === name;
+        p.classList.toggle("active", on);
+        p.style.display = on ? "block" : "none";
+      });
+    }
+
+    async function loadUsersList() {
+      const onlineList = document.getElementById("online-list");
+      const usersList = document.getElementById("users-list");
+      try {
+        const data = await api("/api/auth/users");
+        const online = data.online || [];
+        const users = data.users || [];
+        const meId = data.me?.id ?? authUser?.id;
+
+        if (onlineList) {
+          if (!online.length) {
+            onlineList.innerHTML = `<div class="hint">Niemand ingelogd</div>`;
+          } else {
+            onlineList.innerHTML = online.map(s => {
+              const isYou = meId != null && Number(s.user_id) === Number(meId);
+              const since = s.since ? String(s.since).replace("T", " ").slice(0, 16) : "";
+              return `
+                <div class="user-row">
+                  <span>
+                    <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:8px;box-shadow:0 0 6px var(--green)"></span>
+                    ${escapeHtml(s.username)}
+                    ${isYou ? '<span class="you">(jij)</span>' : ""}
+                  </span>
+                  <span class="you" style="font-family:var(--mono);font-size:0.7rem">${escapeHtml(since)}</span>
+                </div>`;
+            }).join("");
+          }
+        }
+
+        if (usersList) {
+          // sort: active first, admin-like first, then name
+          const sorted = [...users].sort((a, b) => {
+            const aa = a.active !== false ? 0 : 1;
+            const bb = b.active !== false ? 0 : 1;
+            if (aa !== bb) return aa - bb;
+            return String(a.username).localeCompare(String(b.username));
+          });
+          usersList.innerHTML = sorted.map(u => {
+            const isYou = meId != null && Number(u.id) === Number(meId);
+            const active = u.active !== false;
+            const status = active
+              ? '<span class="you" style="color:var(--green)">actief</span>'
+              : '<span class="you">uit</span>';
+            const toggleLabel = active ? "Deactiveren" : "Activeren";
+            // can toggle any other user; cannot deactivate self
+            const canToggle = !isYou;
+            return `
+              <div class="user-row" data-uid="${u.id}">
+                <span>
+                  ${escapeHtml(u.username)}
+                  ${isYou ? '<span class="you">(jij)</span>' : ""}
+                  ${status}
+                </span>
+                ${canToggle ? `
+                  <button type="button" class="btn" data-toggle-user="${u.id}" data-active="${active ? "0" : "1"}"
+                    style="padding:4px 8px;font-size:0.72rem">${toggleLabel}</button>
+                ` : `<span class="you">—</span>`}
+              </div>`;
+          }).join("") || `<div class="hint">Geen accounts</div>`;
+
+          usersList.querySelectorAll("[data-toggle-user]").forEach(btn => {
+            btn.addEventListener("click", async () => {
+              const id = btn.getAttribute("data-toggle-user");
+              const next = btn.getAttribute("data-active") === "1";
+              const msg = next
+                ? "Account activeren? Dit account kan weer inloggen."
+                : "Account deactiveren? Dit account kan dan niet meer inloggen.";
+              if (!confirm(msg)) return;
+              try {
+                await api(`/api/auth/users/${id}/active`, {
+                  method: "POST",
+                  body: JSON.stringify({ active: next }),
+                });
+                await loadUsersList();
+              } catch (e) {
+                alert(e.message);
+              }
+            });
+          });
+        }
+      } catch (e) {
+        if (onlineList) onlineList.innerHTML = `<div class="hint">${escapeHtml(e.message)}</div>`;
+        if (usersList) usersList.innerHTML = "";
+      }
+    }
+
+    function openAccountModal() {
+      if (!authUser) {
+        showLoginGate();
+        return;
+      }
+      closeSettingsMenu();
+      applyLang();
+      const un = document.getElementById("account-username");
+      if (un) un.textContent = authUser.username;
+      document.getElementById("acc-username").value = authUser.username || "";
+      document.getElementById("pw-error").classList.add("hidden");
+      document.getElementById("pw-ok").classList.add("hidden");
+      setErrorEl(document.getElementById("user-error"), "");
+      document.getElementById("user-ok").classList.add("hidden");
+      setErrorEl(document.getElementById("create-user-error"), "");
+      document.getElementById("create-user-ok").classList.add("hidden");
+      document.getElementById("pw-form").reset();
+      document.getElementById("user-form").reset();
+      document.getElementById("acc-username").value = authUser.username || "";
+      document.getElementById("create-user-form").reset();
+      openAccTab("profile");
+      accountModal.classList.remove("hidden");
+    }
+
+    document.getElementById("btn-account-close").addEventListener("click", () => {
+      accountModal.classList.add("hidden");
+    });
+    document.getElementById("btn-account-close2")?.addEventListener("click", () => {
+      accountModal.classList.add("hidden");
+    });
+    accountModal.addEventListener("click", (e) => {
+      if (e.target === accountModal) accountModal.classList.add("hidden");
+    });
+    document.querySelectorAll("#account-tabs .settings-tab").forEach(tab => {
+      tab.addEventListener("click", async () => {
+        const name = tab.getAttribute("data-acc-tab");
+        openAccTab(name);
+        if (name === "users") await loadUsersList();
+      });
+    });
+    document.getElementById("user-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const err = document.getElementById("user-error");
+      const ok = document.getElementById("user-ok");
+      setErrorEl(err, "");
+      ok.classList.add("hidden");
+      try {
+        const data = await api("/api/auth/username", {
+          method: "POST",
+          body: JSON.stringify({
+            current_password: document.getElementById("acc-user-pass").value,
+            new_username: document.getElementById("acc-username").value.trim(),
+          }),
+        });
+        authUser = { ...authUser, username: data.username };
+        document.getElementById("account-username").textContent = data.username;
+        document.getElementById("acc-user-pass").value = "";
+        ok.classList.remove("hidden");
+        applyLang();
+      } catch (ex) {
+        setErrorEl(err, ex.message || "Wijzigen mislukt");
+      }
+    });
+    document.getElementById("create-user-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const err = document.getElementById("create-user-error");
+      const ok = document.getElementById("create-user-ok");
+      setErrorEl(err, "");
+      ok.classList.add("hidden");
+      try {
+        await api("/api/auth/users", {
+          method: "POST",
+          body: JSON.stringify({
+            username: document.getElementById("new-user").value.trim(),
+            password: document.getElementById("new-user-pass").value,
+          }),
+        });
+        document.getElementById("create-user-form").reset();
+        ok.classList.remove("hidden");
+        await loadUsersList();
+      } catch (ex) {
+        setErrorEl(err, ex.message || "Aanmaken mislukt");
+      }
+    });
+
+    let settingsRefreshTimer = null;
+    function applySettingsToClient(s) {
+      meta = { ...meta, ...s };
+      if (settingsRefreshTimer) clearInterval(settingsRefreshTimer);
+      const ms = Math.max(2, Number(s.poll_interval_seconds) || 5) * 1000;
+      settingsRefreshTimer = setInterval(async () => {
+        if (getToken()) await refresh();
+      }, ms);
+    }
+
+    document.getElementById("btn-settings").addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleSettingsMenu();
+    });
+    document.getElementById("menu-account").addEventListener("click", openAccountModal);
+    document.getElementById("menu-logout").addEventListener("click", async () => {
+      closeSettingsMenu();
+      try { await api("/api/auth/logout", { method: "POST", body: "{}" }); } catch { /* ignore */ }
+      setToken("");
+      authUser = null;
+      updateAccountBtn();
+      accountModal.classList.add("hidden");
+      lastHosts = [];
+      grid.innerHTML = "";
+      showLoginGate();
+    });
+    document.getElementById("menu-lang").addEventListener("change", (e) => {
+      lang = e.target.value === "en" ? "en" : "nl";
+      localStorage.setItem(LANG_KEY, lang);
+      applyLang();
+    });
+    document.addEventListener("click", (e) => {
+      const menu = document.getElementById("settings-menu");
+      const btn = document.getElementById("btn-settings");
+      if (!menu || !menu.classList.contains("open")) return;
+      if (menu.contains(e.target) || btn.contains(e.target)) return;
+      closeSettingsMenu();
+    });
+    document.getElementById("btn-logout").addEventListener("click", async () => {
+      try { await api("/api/auth/logout", { method: "POST", body: "{}" }); } catch { /* ignore */ }
+      setToken("");
+      authUser = null;
+      updateAccountBtn();
+      accountModal.classList.add("hidden");
+      closeSettingsMenu();
+      lastHosts = [];
+      grid.innerHTML = "";
+      showLoginGate();
+    });
+    document.getElementById("pw-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const err = document.getElementById("pw-error");
+      const ok = document.getElementById("pw-ok");
+      setErrorEl(err, "");
+      ok.classList.add("hidden");
+      const a = document.getElementById("pw-new").value;
+      const b = document.getElementById("pw-new2").value;
+      if (a !== b) {
+        setErrorEl(err, "Nieuwe wachtwoorden komen niet overeen");
+        return;
+      }
+      try {
+        const data = await api("/api/auth/password", {
+          method: "POST",
+          body: JSON.stringify({
+            current_password: document.getElementById("pw-current").value,
+            new_password: a,
+          }),
+        });
+        if (data.token) setToken(data.token);
+        ok.classList.remove("hidden");
+        document.getElementById("pw-form").reset();
+      } catch (ex) {
+        setErrorEl(err, ex.message || "Wijzigen mislukt");
+      }
+    });
+
+    (async function init() {
+      try {
+        // meta is public
+        const res = await fetch("/api/meta");
+        meta = await res.json();
+        if (meta.database) {
+          document.getElementById("db-label").textContent = "SQLite";
+        }
+      } catch { /* ignore */ }
+      applyLang();
+      const ok = await ensureAuth();
+      if (ok) {
+        await refresh();
+        applySettingsToClient(meta);
+        applyLang();
+      }
+    })();
+  </script>
+</body>
+</html>
