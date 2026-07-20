@@ -158,7 +158,6 @@ In the Proxmox UI: **Create CT**
 
 | Setting | Recommended value | Notes |
 |---------|-------------------|--------|
-| **General → CT ID** | e.g. `150` | Free ID |
 | **General → Hostname** | `idrac-cool` | |
 | **General → Unprivileged container** | **Yes** | Enough for IPMI-over-LAN |
 | **General → Nesting** | No | Not required |
@@ -180,8 +179,8 @@ If iDRAC is on a management VLAN, attach the CT to that bridge/VLAN or add a rou
 #### Install inside the CT
 
 ```bash
-# From Proxmox host
-pct enter 150
+# From Proxmox host (use your CT ID)
+pct enter <CTID>
 # or: ssh into the CT
 
 apt update
