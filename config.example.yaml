@@ -26,10 +26,10 @@ credentials:
   username: root
   # password via env IDRAC_PASSWORD
 
-hosts:
-  - id: minilab2
-    name: "minilab2 (R630)"
-    host: 10.0.10.x
-  - id: minilab
-    name: "minilab (R630)"
-    host: 10.0.10.y
+# Geen hosts bij eerste start — voeg iDRAC toe via de UI (+ iDRAC).
+# Optioneel kun je hier nog hosts zetten (komen terug bij elke herstart):
+# hosts:
+#   - id: server1
+#     name: "Server 1"
+#     host: 10.0.30.6
+hosts: []
