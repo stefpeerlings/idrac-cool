@@ -2,52 +2,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="iDRAC Cool">
   <defs>
     <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0b1220"/>
-      <stop offset="55%" stop-color="#111827"/>
+      <stop offset="0%" stop-color="#070b14"/>
       <stop offset="100%" stop-color="#0f172a"/>
     </linearGradient>
     <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#22d3ee"/>
-      <stop offset="50%" stop-color="#14b8a6"/>
-      <stop offset="100%" stop-color="#2dd4bf"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
     </linearGradient>
     <linearGradient id="cool" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#2dd4bf"/>
       <stop offset="100%" stop-color="#38bdf8"/>
     </linearGradient>
-    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="6" result="b"/>
-      <feMerge>
-        <feMergeNode in="b"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
   </defs>
 
-  <!-- rounded tile -->
-  <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#bg)"/>
-  <rect x="16" y="16" width="480" height="480" rx="112" fill="none" stroke="url(#ring)" stroke-width="3" opacity="0.55"/>
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+  <rect x="10" y="10" width="492" height="492" rx="100" fill="none" stroke="url(#ring)" stroke-width="3" opacity="0.45"/>
 
-  <!-- fan / cool mark -->
-  <g transform="translate(256,200)" filter="url(#glow)">
-    <circle r="54" fill="none" stroke="url(#ring)" stroke-width="10" opacity="0.95"/>
-    <circle r="12" fill="#67e8f9"/>
-    <!-- blades -->
-    <g fill="#14b8a6" opacity="0.95">
-      <ellipse cx="0" cy="-34" rx="14" ry="28" transform="rotate(0)"/>
-      <ellipse cx="0" cy="-34" rx="14" ry="28" transform="rotate(72)"/>
-      <ellipse cx="0" cy="-34" rx="14" ry="28" transform="rotate(144)"/>
-      <ellipse cx="0" cy="-34" rx="14" ry="28" transform="rotate(216)"/>
-      <ellipse cx="0" cy="-34" rx="14" ry="28" transform="rotate(288)"/>
+  <!-- fan -->
+  <g transform="translate(256,175)">
+    <circle r="58" fill="none" stroke="url(#ring)" stroke-width="9" opacity="0.9"/>
+    <g fill="#14b8a6">
+      <ellipse cx="0" cy="-36" rx="15" ry="30" transform="rotate(0)"/>
+      <ellipse cx="0" cy="-36" rx="15" ry="30" transform="rotate(72)"/>
+      <ellipse cx="0" cy="-36" rx="15" ry="30" transform="rotate(144)"/>
+      <ellipse cx="0" cy="-36" rx="15" ry="30" transform="rotate(216)"/>
+      <ellipse cx="0" cy="-36" rx="15" ry="30" transform="rotate(288)"/>
     </g>
-    <circle r="8" fill="#ecfeff"/>
+    <circle r="14" fill="#67e8f9"/>
+    <circle r="7" fill="#f0fdfa"/>
   </g>
 
-  <!-- wordmark -->
-  <text x="256" y="320" text-anchor="middle"
-        font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif"
-        font-size="54" font-weight="700" letter-spacing="1.5" fill="#e2e8f0">iDRAC</text>
-  <text x="256" y="378" text-anchor="middle"
-        font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif"
-        font-size="48" font-weight="700" letter-spacing="4" fill="url(#cool)">COOL</text>
+  <!-- wordmark: iDRAC Cool -->
+  <text x="256" y="330" text-anchor="middle"
+        font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif"
+        font-size="58" font-weight="700" fill="#e2e8f0">iDRAC</text>
+  <text x="256" y="400" text-anchor="middle"
+        font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif"
+        font-size="52" font-weight="700" letter-spacing="6" fill="#2dd4bf">Cool</text>
 </svg>
