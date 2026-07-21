@@ -1406,20 +1406,20 @@
         <input type="hidden" id="f-edit-id" value="" />
         <div class="field">
           <label for="f-name">Naam *</label>
-          <input id="f-name" name="name" required placeholder="bv. minilab2" autocomplete="off" />
+          <input id="f-name" name="name" required placeholder="bv. rack-01" autocomplete="off" />
           <div class="help">Zichtbare titel op het panel (bv. Proxmox node-naam).</div>
         </div>
         <div class="field">
           <label for="f-host">IP / hostname *</label>
-          <input id="f-host" name="host" required placeholder="10.0.10.50" autocomplete="off" />
+          <input id="f-host" name="host" required placeholder="192.168.1.100" autocomplete="off" />
         </div>
         <div class="field">
           <label for="f-user">Username (optioneel)</label>
-          <input id="f-user" name="username" placeholder="standaard uit config / env" autocomplete="username" />
+          <input id="f-user" name="username" placeholder="bv. root" autocomplete="username" />
         </div>
         <div class="field">
           <label for="f-pass">Password (optioneel)</label>
-          <input id="f-pass" name="password" type="password" placeholder="of IDRAC_PASSWORD env" autocomplete="current-password" />
+          <input id="f-pass" name="password" type="password" placeholder="bv. ••••••••" autocomplete="current-password" />
           <div class="help" id="f-pass-help">Wordt lokaal in de SQLite-DB opgeslagen. Bij bewerken: leeg = ongewijzigd.</div>
         </div>
         <div id="form-error" class="hint hidden" style="margin-bottom:12px"></div>
@@ -2005,7 +2005,7 @@
       document.getElementById("modal-title").textContent = "iDRAC toevoegen";
       document.getElementById("modal-sub").textContent =
         "IP of hostname · auto-detect model, sensors en fans via IPMI";
-      document.getElementById("f-pass").placeholder = "of IDRAC_PASSWORD env";
+      document.getElementById("f-pass").placeholder = "bv. ••••••••";
       document.getElementById("f-pass-help").textContent =
         "Wordt lokaal in de SQLite-DB opgeslagen.";
       document.getElementById("btn-save").textContent = "Detecteer & toevoegen";
@@ -2023,7 +2023,7 @@
       document.getElementById("f-edit-id").value = id;
       document.getElementById("modal-title").textContent = "Panel bewerken";
       document.getElementById("modal-sub").textContent =
-        "Geef een duidelijke naam (bv. minilab2) om panels te onderscheiden.";
+        "Geef een duidelijke naam (bv. rack-01) om panels te onderscheiden.";
       document.getElementById("f-name").value = h.name || "";
       document.getElementById("f-name").required = true;
       document.getElementById("f-host").value = h.host || "";
