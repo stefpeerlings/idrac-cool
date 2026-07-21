@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="256" viewBox="0 0 1024 256" role="img" aria-label="iDRAC Cool">
+  <defs>
+    <linearGradient id="cool" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+    <linearGradient id="ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#14b8a6"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="256" rx="48" fill="#0b1220"/>
+  <g transform="translate(128,128)">
+    <circle r="52" fill="none" stroke="url(#ring)" stroke-width="9"/>
+    <circle r="11" fill="#67e8f9"/>
+    <g fill="#14b8a6">
+      <ellipse cx="0" cy="-32" rx="12" ry="26" transform="rotate(0)"/>
+      <ellipse cx="0" cy="-32" rx="12" ry="26" transform="rotate(72)"/>
+      <ellipse cx="0" cy="-32" rx="12" ry="26" transform="rotate(144)"/>
+      <ellipse cx="0" cy="-32" rx="12" ry="26" transform="rotate(216)"/>
+      <ellipse cx="0" cy="-32" rx="12" ry="26" transform="rotate(288)"/>
+    </g>
+    <circle r="7" fill="#ecfeff"/>
+  </g>
+  <text x="220" y="148" font-family="ui-sans-serif, system-ui, Segoe UI, sans-serif"
+        font-size="78" font-weight="700" fill="#e2e8f0">iDRAC <tspan fill="url(#cool)">Cool</tspan></text>
+</svg>
