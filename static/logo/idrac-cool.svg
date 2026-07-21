@@ -9,34 +9,25 @@
       <stop offset="0%" stop-color="#22d3ee"/>
       <stop offset="100%" stop-color="#14b8a6"/>
     </linearGradient>
-    <linearGradient id="cool" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#2dd4bf"/>
-      <stop offset="100%" stop-color="#38bdf8"/>
-    </linearGradient>
   </defs>
-
   <rect width="512" height="512" rx="108" fill="url(#bg)"/>
   <rect x="10" y="10" width="492" height="492" rx="100" fill="none" stroke="url(#ring)" stroke-width="3" opacity="0.45"/>
-
-  <!-- fan -->
-  <g transform="translate(256,175)">
-    <circle r="58" fill="none" stroke="url(#ring)" stroke-width="9" opacity="0.9"/>
+  <g transform="translate(256,168)">
+    <circle r="56" fill="none" stroke="url(#ring)" stroke-width="8" opacity="0.85"/>
     <g fill="#14b8a6">
-      <ellipse cx="0" cy="-36" rx="15" ry="30" transform="rotate(0)"/>
-      <ellipse cx="0" cy="-36" rx="15" ry="30" transform="rotate(72)"/>
-      <ellipse cx="0" cy="-36" rx="15" ry="30" transform="rotate(144)"/>
-      <ellipse cx="0" cy="-36" rx="15" ry="30" transform="rotate(216)"/>
-      <ellipse cx="0" cy="-36" rx="15" ry="30" transform="rotate(288)"/>
+      <ellipse cx="0" cy="-34" rx="14" ry="28" transform="rotate(0)"/>
+      <ellipse cx="0" cy="-34" rx="14" ry="28" transform="rotate(72)"/>
+      <ellipse cx="0" cy="-34" rx="14" ry="28" transform="rotate(144)"/>
+      <ellipse cx="0" cy="-34" rx="14" ry="28" transform="rotate(216)"/>
+      <ellipse cx="0" cy="-34" rx="14" ry="28" transform="rotate(288)"/>
     </g>
-    <circle r="14" fill="#67e8f9"/>
-    <circle r="7" fill="#f0fdfa"/>
+    <circle r="13" fill="#67e8f9"/>
+    <circle r="6" fill="#f0fdfa"/>
   </g>
-
-  <!-- wordmark: iDRAC Cool -->
-  <text x="256" y="330" text-anchor="middle"
+  <text x="256" y="340" text-anchor="middle"
         font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif"
-        font-size="58" font-weight="700" fill="#e2e8f0">iDRAC</text>
-  <text x="256" y="400" text-anchor="middle"
+        font-size="56" font-weight="700" fill="#e2e8f0">iDRAC</text>
+  <text x="256" y="408" text-anchor="middle"
         font-family="DejaVu Sans, Liberation Sans, Arial, sans-serif"
-        font-size="52" font-weight="700" letter-spacing="6" fill="#2dd4bf">Cool</text>
+        font-size="50" font-weight="700" fill="#2dd4bf">Cool</text>
 </svg>
