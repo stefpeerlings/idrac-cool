@@ -10,9 +10,9 @@ WorkingDirectory=/opt/idrac-cool
 Environment=IDRAC_PASSWORD=change-me
 # Environment=IDRAC_USERNAME=root
 # Environment=DASHBOARD_PASSWORD=change-me
-# HTTPS (optional — both required for TLS-only listen):
-# Environment=SSL_CERTFILE=/opt/idrac-cool/data/certs/cert.pem
-# Environment=SSL_KEYFILE=/opt/idrac-cool/data/certs/key.pem
+# HTTPS-only (required for https://lxc-ip:8787):
+Environment=SSL_CERTFILE=/opt/idrac-cool/data/certs/cert.pem
+Environment=SSL_KEYFILE=/opt/idrac-cool/data/certs/key.pem
 Environment=PATH=/opt/idrac-cool/.venv/bin:/usr/bin
 ExecStart=/opt/idrac-cool/.venv/bin/python -m app.main
 Restart=always

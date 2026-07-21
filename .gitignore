@@ -8,6 +8,7 @@ config.local.yaml
 data/*.db
 data/*.db-*
 data/*.json
+data/certs/
 !data/.gitkeep
 
 # Python

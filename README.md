@@ -175,35 +175,54 @@ In the Proxmox UI: **Create CT**
 **Network note:** the CT must reach the iDRAC management IPs (UDP **623**).  
 If iDRAC is on a management VLAN, attach the CT to that bridge/VLAN or add a route.
 
-#### Install inside the CT
+#### Install inside the CT (HTTPS only)
+
+The LXC install listens on **HTTPS only**. Open:
+
+```text
+https://<lxc-ip>:8787
+```
+
+(Self-signed cert → browser warning is normal: Advanced → Proceed.)
 
 ```bash
-# From Proxmox host (use your CT ID)
+# From Proxmox host
 pct enter <CTID>
 # or: ssh into the CT
 
 apt update
-apt install -y python3 python3-venv python3-pip ipmitool git curl
+apt install -y git
 
 git clone https://github.com/stefpeerlings/idrac-cool.git /opt/idrac-cool
 cd /opt/idrac-cool
 
+# packages + venv + TLS cert + systemd (HTTPS)
+bash scripts/install-lxc.sh
+
+# set real iDRAC password
+nano /etc/idrac-cool.env
+systemctl restart idrac-cool
+```
+
+Manual equivalent (if you prefer step-by-step):
+
+```bash
+apt install -y python3 python3-venv python3-pip ipmitool git curl openssl
+git clone https://github.com/stefpeerlings/idrac-cool.git /opt/idrac-cool
+cd /opt/idrac-cool
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 cp config.example.yaml config.yaml
 
-# Create env file for secrets
-cat >/etc/idrac-cool.env <<'EOF'
+./scripts/gen-selfsigned-cert.sh   # cert with LXC IP in SAN
+
+cat >/etc/idrac-cool.env <<EOF
 IDRAC_PASSWORD=your-idrac-password
-# IDRAC_USERNAME=root
-# DASHBOARD_PASSWORD=strong-password
+SSL_CERTFILE=/opt/idrac-cool/data/certs/cert.pem
+SSL_KEYFILE=/opt/idrac-cool/data/certs/key.pem
 EOF
 chmod 600 /etc/idrac-cool.env
-```
 
-#### Systemd in the CT
-
-```bash
 cat >/etc/systemd/system/idrac-cool.service <<'EOF'
 [Unit]
 Description=iDRAC Cool Fan Dashboard
@@ -225,14 +244,15 @@ EOF
 
 systemctl daemon-reload
 systemctl enable --now idrac-cool
-systemctl status idrac-cool
 ```
 
 From your PC:
 
 ```text
-http://<lxc-ip>:8787
+https://10.0.10.x:8787
 ```
+
+Plain **http://** will not work on that port (TLS only).
 
 #### Quick checks in the CT
 
@@ -269,50 +289,30 @@ Include that path in your CT/PBS backups.
 
 ## HTTPS only (no plain HTTP)
 
-Two options. **A** is best with a real domain + Let's Encrypt. **B** is TLS direct on the app.
-
-### A) Reverse proxy (recommended) — Nginx Proxy Manager / Caddy / nginx
-
-1. Keep the app on the LXC/Pi at port **8787** (HTTP is fine **behind** the proxy).  
-2. In NPM: **Proxy Host** → `idrac-cool.your-domain` → `http://<lxc-ip>:8787`  
-3. Enable **SSL** (Let's Encrypt) + **Force SSL**  
-4. Optional: firewall so only the proxy may reach port 8787  
-
-Open: **`https://idrac-cool.your-domain`**
-
-### B) Built-in TLS (app listens HTTPS only)
-
-With cert + key set, uvicorn serves **HTTPS only** on the bind port (no HTTP on that port).
-
-```bash
-# Self-signed (browser warning — OK for LAN)
-./scripts/gen-selfsigned-cert.sh
-
-export SSL_CERTFILE=/opt/idrac-cool/data/certs/cert.pem
-export SSL_KEYFILE=/opt/idrac-cool/data/certs/key.pem
-export IDRAC_PASSWORD='***'
-./run-live.sh
-```
-
-Or in `config.yaml`:
-
-```yaml
-ssl_certfile: /opt/idrac-cool/data/certs/cert.pem
-ssl_keyfile: /opt/idrac-cool/data/certs/key.pem
-```
-
-Or in `/etc/idrac-cool.env` + systemd:
-
-```bash
-SSL_CERTFILE=/opt/idrac-cool/data/certs/cert.pem
-SSL_KEYFILE=/opt/idrac-cool/data/certs/key.pem
-```
+**LXC install is HTTPS by default** via `scripts/install-lxc.sh`:
 
 ```text
-https://<host-ip>:8787
+https://<lxc-ip>:8787
 ```
 
-Use a real cert (Let's Encrypt / your CA) instead of self-signed if you want a clean padlock.
+Self-signed certificate (browser warning → Advanced → Proceed). No plain HTTP on port 8787.
+
+### Existing LXC: switch to HTTPS
+
+```bash
+cd /opt/idrac-cool
+git pull origin main
+bash scripts/install-lxc.sh
+# check IDRAC_PASSWORD in /etc/idrac-cool.env
+systemctl restart idrac-cool
+```
+
+Then open **`https://<lxc-ip>:8787`** (not `http://`).
+
+### Optional: reverse proxy (domain + Let's Encrypt)
+
+If you use Nginx Proxy Manager with a real domain, you can still proxy to the LXC.  
+With built-in TLS the forward scheme must be **https** (or regenerate without SSL and proxy to http). For a simple **https://lxc-ip** setup you do **not** need NPM.
 
 ## Configuration
 
