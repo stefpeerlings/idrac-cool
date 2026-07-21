@@ -25,5 +25,19 @@ if [[ ! -d .venv ]]; then
   .venv/bin/pip install -r requirements.txt
 fi
 
-echo "Starting LIVE on http://0.0.0.0:8787  (mock uit)"
-exec .venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8787
+HOST="${BIND_HOST:-0.0.0.0}"
+PORT="${BIND_PORT:-8787}"
+UV_ARGS=(--host "$HOST" --port "$PORT")
+
+if [[ -n "${SSL_CERTFILE:-}" && -n "${SSL_KEYFILE:-}" ]]; then
+  UV_ARGS+=(--ssl-certfile "$SSL_CERTFILE" --ssl-keyfile "$SSL_KEYFILE")
+  echo "Starting LIVE on https://${HOST}:${PORT}  (TLS, mock uit)"
+elif [[ -n "${SSL_CERTFILE:-}${SSL_KEYFILE:-}" ]]; then
+  echo "Zet SSL_CERTFILE én SSL_KEYFILE (beide), of geen van beide."
+  exit 1
+else
+  echo "Starting LIVE on http://${HOST}:${PORT}  (mock uit)"
+  echo "Tip: HTTPS via SSL_CERTFILE/SSL_KEYFILE of reverse proxy (NPM)."
+fi
+
+exec .venv/bin/python -m uvicorn app.main:app "${UV_ARGS[@]}"

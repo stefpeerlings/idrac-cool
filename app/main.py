@@ -1017,12 +1017,17 @@ def run():
     import uvicorn
 
     c = load_config()
-    uvicorn.run(
-        "app.main:app",
-        host=c.bind_host,
-        port=c.bind_port,
-        reload=False,
-    )
+    kwargs: dict = {
+        "app": "app.main:app",
+        "host": c.bind_host,
+        "port": c.bind_port,
+        "reload": False,
+    }
+    if c.ssl_certfile and c.ssl_keyfile:
+        kwargs["ssl_certfile"] = c.ssl_certfile
+        kwargs["ssl_keyfile"] = c.ssl_keyfile
+        log.info("TLS enabled — https://%s:%s", c.bind_host, c.bind_port)
+    uvicorn.run(**kwargs)
 
 
 if __name__ == "__main__":

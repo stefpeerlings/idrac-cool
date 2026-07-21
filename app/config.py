@@ -55,6 +55,8 @@ class AppConfig:
     ipmi_timeout_seconds: float = 8.0
     bind_host: str = "0.0.0.0"
     bind_port: int = 8787
+    ssl_certfile: str | None = None
+    ssl_keyfile: str | None = None
     credentials_username: str = "root"
     credentials_password: str = ""
     smart_auto: SmartAutoConfig = field(default_factory=SmartAutoConfig)
@@ -159,6 +161,26 @@ def load_config(path: str | Path | None = None) -> AppConfig:
             HostConfig(id="demo2", name="demo2 (mock R630)", host="127.0.0.2"),
         ]
 
+    # TLS: env SSL_CERTFILE / SSL_KEYFILE override config
+    ssl_cert = (
+        os.environ.get("SSL_CERTFILE")
+        or os.environ.get("IDRAC_SSL_CERTFILE")
+        or raw.get("ssl_certfile")
+        or None
+    )
+    ssl_key = (
+        os.environ.get("SSL_KEYFILE")
+        or os.environ.get("IDRAC_SSL_KEYFILE")
+        or raw.get("ssl_keyfile")
+        or None
+    )
+    if ssl_cert:
+        ssl_cert = str(ssl_cert).strip() or None
+    if ssl_key:
+        ssl_key = str(ssl_key).strip() or None
+    if bool(ssl_cert) != bool(ssl_key):
+        raise ValueError("ssl_certfile and ssl_keyfile must both be set (or neither)")
+
     return AppConfig(
         poll_interval_seconds=float(raw.get("poll_interval_seconds", 5)),
         fan_presets=presets,
@@ -171,6 +193,8 @@ def load_config(path: str | Path | None = None) -> AppConfig:
         ipmi_timeout_seconds=float(raw.get("ipmi_timeout_seconds", 8)),
         bind_host=str(raw.get("bind_host", "0.0.0.0")),
         bind_port=int(raw.get("bind_port", 8787)),
+        ssl_certfile=ssl_cert,
+        ssl_keyfile=ssl_key,
         credentials_username=username,
         credentials_password=password,
         smart_auto=SmartAutoConfig(

@@ -12,6 +12,9 @@ default_percent: 20
 ipmi_timeout_seconds: 8
 bind_host: "0.0.0.0"
 bind_port: 8787
+# HTTPS only (optional) — of via env SSL_CERTFILE / SSL_KEYFILE:
+# ssl_certfile: /opt/idrac-cool/data/certs/cert.pem
+# ssl_keyfile: /opt/idrac-cool/data/certs/key.pem
 
 smart_auto:
   metric: cpu_max          # cpu_max | outlet | inlet
