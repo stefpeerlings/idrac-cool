@@ -238,10 +238,10 @@ http://<lxc-ip>:8787
 
 ```bash
 # Can we reach iDRAC?
-ping -c 2 10.0.30.6
+ping -c 2 192.168.1.x
 
 # IPMI over LAN?
-ipmitool -I lanplus -H 10.0.30.6 -U root -P "$IDRAC_PASSWORD" mc info
+ipmitool -I lanplus -H 192.168.1.x -U root -P "$IDRAC_PASSWORD" mc info
 ```
 
 #### Backup

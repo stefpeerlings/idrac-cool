@@ -31,5 +31,5 @@ credentials:
 # hosts:
 #   - id: server1
 #     name: "Server 1"
-#     host: 10.0.30.6
+#     host: 192.168.1.x
 hosts: []

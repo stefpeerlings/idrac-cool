@@ -851,7 +851,7 @@ async def detect_host(host_id: str, user: AuthUser = Depends(require_user)):
 
 
 async def _edit_host_impl(host_id: str, body: EditHostBody):
-    """Rename / reconfigure a panel (e.g. label as minilab2)."""
+    """Rename / reconfigure a panel (e.g. label as rack-01)."""
     h = db.get_host(host_id)
     if not h:
         raise HTTPException(404, "host not found")
