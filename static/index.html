@@ -1248,6 +1248,12 @@
               <option value="en">EN</option>
             </select>
           </div>
+          <div class="settings-lang" title="Maximum fan % voor Dashboard Auto">
+            <span id="menu-auto-max-label">Auto max %</span>
+            <select id="menu-auto-max" aria-label="Auto max percent">
+              <!-- filled by JS -->
+            </select>
+          </div>
           <div class="settings-sep"></div>
           <button type="button" class="danger" id="menu-logout" role="menuitem">Uitloggen</button>
         </div>
@@ -1439,7 +1445,13 @@
     const loginGate = document.getElementById("login-gate");
     const accountModal = document.getElementById("account-modal");
     const TOKEN_KEY = "idrac_dash_token";
-    let meta = { fan_presets: [15, 20, 25, 30, 40, 50], fan_min_percent: 10, fan_max_percent: 50, mock: false };
+    let meta = {
+      fan_presets: [15, 20, 25, 30, 40, 50],
+      fan_min_percent: 10,
+      fan_max_percent: 50,
+      smart_auto_max_percent: 30,
+      mock: false,
+    };
     let busyIds = new Set();
     let lastHosts = [];
     let bound = false; // event delegation once
@@ -1477,6 +1489,7 @@
         settings: "Settings",
         myAccount: "My account",
         language: "Taal",
+        autoMax: "Auto max %",
         logout: "Uitloggen",
         loginTitle: "Inloggen",
         loginSub: "Welkom terug. Beheer fans en temperatures veilig.",
@@ -1496,6 +1509,7 @@
         settings: "Settings",
         myAccount: "My account",
         language: "Language",
+        autoMax: "Auto max %",
         logout: "Log out",
         loginTitle: "Sign in",
         loginSub: "Welcome back. Manage fans and temperatures securely.",
@@ -1523,6 +1537,8 @@
       const btnSettings = document.getElementById("btn-settings");
       if (btnRefresh) btnRefresh.textContent = t("refresh");
       if (btnSettings) btnSettings.textContent = t("settings");
+      const autoMaxLbl = document.getElementById("menu-auto-max-label");
+      if (autoMaxLbl) autoMaxLbl.textContent = t("autoMax");
       const menuAccount = document.getElementById("menu-account");
       const menuLogout = document.getElementById("menu-logout");
       const menuLangLabel = document.getElementById("menu-lang-label");
@@ -1672,7 +1688,10 @@
       const applied = h.applied_percent ?? h.desired_percent;
       if (h.last_error) return `<div class="hint" data-role="hint">${escapeHtml(h.last_error)}</div>`;
       if (isDell) return `<div class="hint" data-role="hint">Dell Auto: firmware regelt fans (kan luid worden).</div>`;
-      if (isAuto) return `<div class="hint" data-role="hint">Dashboard Auto: fans op temp, max 30%.</div>`;
+      if (isAuto) {
+        const cap = meta.smart_auto_max_percent ?? 30;
+        return `<div class="hint" data-role="hint">Dashboard Auto: fans op temp, max ${cap}%.</div>`;
+      }
       return `<div class="hint" data-role="hint">Handmatig ${applied ?? "—"}% (tot ${meta.fan_max_percent || 50}%).</div>`;
     }
 
@@ -2523,15 +2542,53 @@
     let settingsRefreshTimer = null;
     function applySettingsToClient(s) {
       meta = { ...meta, ...s };
+      fillAutoMaxSelect();
       if (settingsRefreshTimer) clearInterval(settingsRefreshTimer);
       const ms = Math.max(2, Number(s.poll_interval_seconds) || 5) * 1000;
       settingsRefreshTimer = setInterval(async () => {
         if (getToken()) await refresh();
       }, ms);
+      // Update Auto hints on open cards without full rebuild flicker when possible
+      if (lastHosts.length) refresh({ forceRebuild: false });
+    }
+
+    function fillAutoMaxSelect() {
+      const sel = document.getElementById("menu-auto-max");
+      if (!sel) return;
+      const min = Number(meta.fan_min_percent) || 10;
+      const max = Number(meta.fan_max_percent) || 50;
+      let cur = Number(meta.smart_auto_max_percent);
+      if (!Number.isFinite(cur)) cur = 30;
+      cur = Math.max(min, Math.min(max, cur));
+      const steps = [];
+      for (let p = min; p <= max; p += 5) steps.push(p);
+      if (!steps.includes(cur)) steps.push(cur);
+      steps.sort((a, b) => a - b);
+      const prev = sel.value;
+      sel.innerHTML = steps.map(p =>
+        `<option value="${p}" ${p === cur ? "selected" : ""}>${p}%</option>`
+      ).join("");
+      if (prev && steps.includes(Number(prev)) && Number(prev) === cur) sel.value = String(cur);
+      else sel.value = String(cur);
+    }
+
+    async function saveAutoMax(percent) {
+      try {
+        const data = await api("/api/settings", {
+          method: "PUT",
+          body: JSON.stringify({ smart_auto_max_percent: Number(percent) }),
+        });
+        applySettingsToClient(data);
+        await refresh({ forceRebuild: true });
+      } catch (e) {
+        alert(e.message || "Auto max opslaan mislukt");
+        fillAutoMaxSelect();
+      }
     }
 
     document.getElementById("btn-settings").addEventListener("click", (e) => {
       e.stopPropagation();
+      fillAutoMaxSelect();
       toggleSettingsMenu();
     });
     document.getElementById("menu-account").addEventListener("click", openAccountModal);
@@ -2550,6 +2607,13 @@
       lang = e.target.value === "en" ? "en" : "nl";
       localStorage.setItem(LANG_KEY, lang);
       applyLang();
+    });
+    document.getElementById("menu-auto-max").addEventListener("change", (e) => {
+      e.stopPropagation();
+      saveAutoMax(e.target.value);
+    });
+    document.getElementById("menu-auto-max").addEventListener("click", (e) => {
+      e.stopPropagation();
     });
     document.addEventListener("click", (e) => {
       const menu = document.getElementById("settings-menu");

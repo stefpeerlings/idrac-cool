@@ -348,10 +348,7 @@ async def lifespan(app: FastAPI):
     db.seed_config_hosts(cfg.hosts, cfg.default_mode, cfg.default_percent)
     _seed_admin_user()
     _load_persisted_settings()
-    # Smart Auto stays capped by its curve bands (typically 30%); manual may go higher.
-    smart_auto_cap = max((b.percent for b in cfg.smart_auto.bands), default=30)
-    smart_auto_cap = min(smart_auto_cap, cfg.fan_max_percent)
-    smart_engine = SmartAutoEngine(cfg.smart_auto, fan_max=smart_auto_cap)
+    smart_engine = _make_smart_engine()
     stop_event.clear()
     t1 = threading.Thread(target=_poll_loop, name="poll", daemon=True)
     t2 = threading.Thread(target=_reapply_loop, name="reapply", daemon=True)
@@ -429,12 +426,46 @@ SESSION_DAYS = 14
 SETTINGS_KEY = "app_settings"
 
 
+def _make_smart_engine() -> SmartAutoEngine:
+    """Build Smart Auto engine; curve is scaled so top band = smart_auto_max_percent."""
+    from .config import SmartAutoBand, SmartAutoConfig
+
+    cap = int(cfg.smart_auto_max_percent)
+    cap = max(cfg.fan_min_percent, min(cfg.fan_max_percent, cap))
+    base = list(cfg.smart_auto.bands) or [
+        SmartAutoBand(45, 15),
+        SmartAutoBand(55, 20),
+        SmartAutoBand(65, 25),
+        SmartAutoBand(999, 30),
+    ]
+    top = max((b.percent for b in base), default=30) or 30
+    scale = cap / float(top)
+    scaled = [
+        SmartAutoBand(
+            below_c=b.below_c,
+            percent=max(cfg.fan_min_percent, min(cap, int(round(b.percent * scale)))),
+        )
+        for b in base
+    ]
+    # Ensure the hottest band reaches the configured max
+    if scaled:
+        hottest = max(range(len(scaled)), key=lambda i: scaled[i].below_c)
+        scaled[hottest] = SmartAutoBand(scaled[hottest].below_c, cap)
+    sa = SmartAutoConfig(
+        metric=cfg.smart_auto.metric,
+        hysteresis_c=cfg.smart_auto.hysteresis_c,
+        bands=scaled,
+    )
+    return SmartAutoEngine(sa, fan_max=cap)
+
+
 def _settings_dict() -> dict[str, Any]:
     return {
         "poll_interval_seconds": cfg.poll_interval_seconds,
         "reapply_interval_seconds": cfg.reapply_interval_seconds,
         "fan_min_percent": cfg.fan_min_percent,
         "fan_max_percent": cfg.fan_max_percent,
+        "smart_auto_max_percent": cfg.smart_auto_max_percent,
         "fan_presets": list(cfg.fan_presets),
         "default_mode": cfg.default_mode,
         "default_percent": cfg.default_percent,
@@ -459,6 +490,14 @@ def _apply_runtime_settings(data: dict[str, Any]) -> None:
         cfg.fan_max_percent = max(1, min(100, int(data["fan_max_percent"])))
     if cfg.fan_min_percent > cfg.fan_max_percent:
         cfg.fan_min_percent, cfg.fan_max_percent = cfg.fan_max_percent, cfg.fan_min_percent
+    if "smart_auto_max_percent" in data:
+        v = int(data["smart_auto_max_percent"])
+        cfg.smart_auto_max_percent = max(cfg.fan_min_percent, min(cfg.fan_max_percent, v))
+    else:
+        # Keep Auto max inside manual min/max after those change
+        cfg.smart_auto_max_percent = max(
+            cfg.fan_min_percent, min(cfg.fan_max_percent, cfg.smart_auto_max_percent)
+        )
     if "fan_presets" in data and isinstance(data["fan_presets"], list):
         presets = sorted({int(p) for p in data["fan_presets"] if 1 <= int(p) <= 100})
         presets = [p for p in presets if cfg.fan_min_percent <= p <= cfg.fan_max_percent]
@@ -495,6 +534,7 @@ def _save_persisted_settings() -> None:
         "reapply_interval_seconds": cfg.reapply_interval_seconds,
         "fan_min_percent": cfg.fan_min_percent,
         "fan_max_percent": cfg.fan_max_percent,
+        "smart_auto_max_percent": cfg.smart_auto_max_percent,
         "fan_presets": list(cfg.fan_presets),
         "default_mode": cfg.default_mode,
         "default_percent": cfg.default_percent,
@@ -517,6 +557,7 @@ async def meta():
         "fan_presets": cfg.fan_presets,
         "fan_min_percent": cfg.fan_min_percent,
         "fan_max_percent": cfg.fan_max_percent,
+        "smart_auto_max_percent": cfg.smart_auto_max_percent,
         "default_mode": cfg.default_mode,
         "default_percent": cfg.default_percent,
         "mock": cfg.mock_ipmi,
@@ -539,6 +580,7 @@ class SettingsBody(BaseModel):
     reapply_interval_seconds: float | None = None
     fan_min_percent: int | None = None
     fan_max_percent: int | None = None
+    smart_auto_max_percent: int | None = None
     fan_presets: list[int] | None = None
     default_mode: str | None = None
     default_percent: int | None = None
@@ -552,11 +594,8 @@ async def put_settings(body: SettingsBody, user: AuthUser = Depends(require_user
         raise HTTPException(400, "geen instellingen opgegeven")
     _apply_runtime_settings(data)
     _save_persisted_settings()
-    # keep smart auto cap in sync
     global smart_engine
-    smart_auto_cap = max((b.percent for b in cfg.smart_auto.bands), default=30)
-    smart_auto_cap = min(smart_auto_cap, cfg.fan_max_percent)
-    smart_engine = SmartAutoEngine(cfg.smart_auto, fan_max=smart_auto_cap)
+    smart_engine = _make_smart_engine()
     return _settings_dict()
 
 

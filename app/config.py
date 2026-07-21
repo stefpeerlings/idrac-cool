@@ -48,6 +48,8 @@ class AppConfig:
     fan_presets: list[int] = field(default_factory=lambda: [15, 20, 25, 30, 40, 50])
     fan_min_percent: int = 10
     fan_max_percent: int = 50
+    # Max fan % for Dashboard Auto (smart curve); independent of manual max.
+    smart_auto_max_percent: int = 30
     reapply_interval_seconds: float = 60.0
     reapply_on_host_online: bool = True
     default_mode: Mode = "smart_auto"
@@ -181,11 +183,21 @@ def load_config(path: str | Path | None = None) -> AppConfig:
     if bool(ssl_cert) != bool(ssl_key):
         raise ValueError("ssl_certfile and ssl_keyfile must both be set (or neither)")
 
+    # Default Auto cap: top band of curve, or explicit smart_auto.max_percent
+    curve_top = max((b.percent for b in bands), default=30)
+    sa_max = sa_raw.get("max_percent", raw.get("smart_auto_max_percent", curve_top))
+    try:
+        smart_auto_max = int(sa_max)
+    except (TypeError, ValueError):
+        smart_auto_max = int(curve_top)
+    smart_auto_max = max(fan_min, min(fan_max, smart_auto_max))
+
     return AppConfig(
         poll_interval_seconds=float(raw.get("poll_interval_seconds", 5)),
         fan_presets=presets,
         fan_min_percent=fan_min,
         fan_max_percent=fan_max,
+        smart_auto_max_percent=smart_auto_max,
         reapply_interval_seconds=float(raw.get("reapply_interval_seconds", 60)),
         reapply_on_host_online=bool(raw.get("reapply_on_host_online", True)),
         default_mode=default_mode,  # type: ignore[arg-type]

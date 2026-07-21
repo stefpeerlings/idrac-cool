@@ -19,6 +19,7 @@ bind_port: 8787
 smart_auto:
   metric: cpu_max          # cpu_max | outlet | inlet
   hysteresis_c: 3
+  max_percent: 30          # Auto-plafond (UI: Settings → Auto max %); curve schaalt hiernaar
   bands:
     - { below_c: 45, percent: 15 }
     - { below_c: 55, percent: 20 }
