@@ -1616,7 +1616,8 @@
     function modeLabel(mode) {
       if (mode === "dell_auto") return { text: "DELL", cls: "mode-dell" };
       if (mode === "manual") return { text: "MANUAL", cls: "mode-manual" };
-      return { text: "AUTO 30%", cls: "mode-smart" };
+      const cap = meta.smart_auto_max_percent ?? 30;
+      return { text: `AUTO ${cap}%`, cls: "mode-smart" };
     }
 
     /** true = custom-veld is actief (geen preset-knop highlight) */
