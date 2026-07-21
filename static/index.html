@@ -2154,7 +2154,7 @@
         const known = new Set(existingIds);
         const html = [];
         if (!hosts.length) {
-          html.push(`<div class="empty">Nog geen nodes. Voeg een iDRAC toe met + of vul config.yaml.</div>`);
+          html.push(`<div class="empty">Nog geen nodes. Voeg een iDRAC toe met +.</div>`);
         }
         hosts.forEach(h => {
           const isNew = animateNew && !known.has(h.id);
