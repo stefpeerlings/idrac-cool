@@ -60,13 +60,6 @@ export IDRAC_PASSWORD='***'
 ./run-live.sh
 ```
 
-### Mock mode (no hardware)
-
-```bash
-export MOCK_IPMI=1
-./run.sh
-```
-
 ## Deploy
 
 Works well on:
@@ -275,7 +268,6 @@ See `config.example.yaml`. Prefer secrets via environment:
 | `IDRAC_USERNAME` | Shared iDRAC user (default `root`) |
 | `DASHBOARD_USER` | First dashboard admin username |
 | `DASHBOARD_PASSWORD` | First dashboard admin password |
-| `MOCK_IPMI` | `1` = fake sensors (dev) |
 
 Hosts can also be added in the UI (**+ iDRAC**).
 
